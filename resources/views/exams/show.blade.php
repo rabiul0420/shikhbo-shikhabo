@@ -7,7 +7,7 @@
             <div class="row">
                 <span class="pill">{{ $exam->academicClass->name }}</span>
                 <span class="pill">{{ $exam->subject->name }}</span>
-                <span class="pill">{{ $exam->chapter->name }}</span>
+            <span class="pill">{{ $exam->chapter->display_name }}</span>
                 <span class="pill">{{ $exam->questions->count() }} questions</span>
                 <span class="pill">{{ $exam->questions->sum('marks') }} marks</span>
             </div>

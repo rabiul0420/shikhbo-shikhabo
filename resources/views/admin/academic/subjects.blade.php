@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Lesson'])
+@extends('layouts.app', ['title' => 'Subject'])
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
@@ -6,16 +6,16 @@
 
 @section('content')
     <div class="admin-layout">
-        @include('admin.academic.partials.sidebar', ['activeAcademic' => 'lessons'])
+        @include('admin.academic.partials.sidebar', ['activeAcademic' => 'subjects'])
 
         <div class="admin-content">
             <section class="panel">
                 <div class="section-head">
                     <div>
                         <span class="eyebrow">Academic Setup</span>
-                        <h2>Lesson</h2>
+                        <h2>Subject</h2>
                     </div>
-                    <button class="js-edit-academic" type="button" data-modal-target="add-lesson">Add Lesson</button>
+                    <button class="js-edit-academic" type="button" data-modal-target="add-subject">Add Subject</button>
                 </div>
             </section>
 
@@ -23,12 +23,12 @@
                 <div class="section-head">
                     <div>
                         <span class="eyebrow">List</span>
-                        <h2>Lesson List</h2>
+                        <h2>Subject List</h2>
                     </div>
                 </div>
 
                 <div class="table-wrap">
-                    <table id="lessons-table" class="display admin-data-table">
+                    <table id="subjects-table" class="display admin-data-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -41,8 +41,8 @@
                                     <td>{{ $subject->name }}</td>
                                     <td>
                                         <div class="table-actions">
-                                            <button class="secondary-action small js-edit-academic" type="button" data-modal-target="edit-lesson-{{ $subject->id }}">Edit</button>
-                                            <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}" onsubmit="return confirm('Delete this lesson?')">
+                                            <button class="secondary-action small js-edit-academic" type="button" data-modal-target="edit-subject-{{ $subject->id }}">Edit</button>
+                                            <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}" onsubmit="return confirm('Delete this subject?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="danger small" type="submit">Delete</button>
@@ -56,51 +56,51 @@
                 </div>
             </section>
 
-            <div class="modal-backdrop" id="add-lesson" aria-hidden="true">
-                <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-lesson-title">
+            <div class="modal-backdrop" id="add-subject" aria-hidden="true">
+                <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-subject-title">
                     <div class="modal-head">
                         <div>
-                            <span class="eyebrow">Add Lesson</span>
-                            <h3 id="add-lesson-title">New Lesson</h3>
+                            <span class="eyebrow">Add Subject</span>
+                            <h3 id="add-subject-title">New Subject</h3>
                         </div>
-                        <button class="button secondary small js-close-modal" type="button" data-modal-close="add-lesson">Close</button>
+                        <button class="button secondary small js-close-modal" type="button" data-modal-close="add-subject">Close</button>
                     </div>
 
                     <form class="stack" method="POST" action="{{ route('admin.subjects.store') }}">
                         @csrf
                         <label>
-                            Lesson name
+                            Subject name
                             <input name="name" placeholder="Mathematics">
                         </label>
                         <div class="modal-actions">
-                            <button class="button secondary js-close-modal" type="button" data-modal-close="add-lesson">Cancel</button>
-                            <button type="submit">Add lesson</button>
+                            <button class="button secondary js-close-modal" type="button" data-modal-close="add-subject">Cancel</button>
+                            <button type="submit">Add subject</button>
                         </div>
                     </form>
                 </div>
             </div>
 
             @foreach ($subjects as $subject)
-                <div class="modal-backdrop" id="edit-lesson-{{ $subject->id }}" aria-hidden="true">
-                    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-lesson-{{ $subject->id }}-title">
+                <div class="modal-backdrop" id="edit-subject-{{ $subject->id }}" aria-hidden="true">
+                    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-subject-{{ $subject->id }}-title">
                         <div class="modal-head">
                             <div>
-                                <span class="eyebrow">Edit Lesson</span>
-                                <h3 id="edit-lesson-{{ $subject->id }}-title">{{ $subject->name }}</h3>
+                                <span class="eyebrow">Edit Subject</span>
+                                <h3 id="edit-subject-{{ $subject->id }}-title">{{ $subject->name }}</h3>
                             </div>
-                            <button class="button secondary small js-close-modal" type="button" data-modal-close="edit-lesson-{{ $subject->id }}">Close</button>
+                            <button class="button secondary small js-close-modal" type="button" data-modal-close="edit-subject-{{ $subject->id }}">Close</button>
                         </div>
 
                         <form class="stack" method="POST" action="{{ route('admin.subjects.update', $subject) }}">
                             @csrf
                             @method('PATCH')
                             <label>
-                                Lesson name
+                                Subject name
                                 <input name="name" value="{{ $subject->name }}">
                             </label>
                             <div class="modal-actions">
-                                <button class="button secondary js-close-modal" type="button" data-modal-close="edit-lesson-{{ $subject->id }}">Cancel</button>
-                                <button type="submit">Update lesson</button>
+                                <button class="button secondary js-close-modal" type="button" data-modal-close="edit-subject-{{ $subject->id }}">Cancel</button>
+                                <button type="submit">Update subject</button>
                             </div>
                         </form>
                     </div>
@@ -110,4 +110,4 @@
     </div>
 @endsection
 
-@include('admin.academic.partials.scripts', ['tableId' => 'lessons-table'])
+@include('admin.academic.partials.scripts', ['tableId' => 'subjects-table'])

@@ -1,22 +1,14 @@
 <aside class="admin-sidebar">
     <div class="admin-brand">
-        <span class="admin-mark">M</span>
+        <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
         <div>
-            <h2>MCQ Admin</h2>
+            <h2>Shikhbo Shikhabo Admin</h2>
             <p>{{ auth()->user()->name }}</p>
         </div>
     </div>
 
     <nav class="admin-menu" aria-label="Admin navigation">
-        <div class="admin-menu-group is-open">
-            <button class="admin-menu-toggle" type="button">
-                Main Menu
-                <span></span>
-            </button>
-            <div class="admin-submenu">
-                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-            </div>
-        </div>
+        <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
 
         <div class="admin-menu-group is-open">
             <button class="admin-menu-toggle" type="button">
@@ -25,7 +17,7 @@
             </button>
             <div class="admin-submenu">
                 <a class="admin-nav-link {{ $activeAcademic === 'classes' ? 'is-active' : '' }}" href="{{ route('admin.academic.classes') }}">Class</a>
-                <a class="admin-nav-link {{ $activeAcademic === 'lessons' ? 'is-active' : '' }}" href="{{ route('admin.academic.lessons') }}">Lesson</a>
+                <a class="admin-nav-link {{ $activeAcademic === 'subjects' ? 'is-active' : '' }}" href="{{ route('admin.academic.subjects') }}">Subject</a>
                 <a class="admin-nav-link {{ $activeAcademic === 'chapters' ? 'is-active' : '' }}" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
             </div>
         </div>
@@ -54,12 +46,20 @@
 
         <div class="admin-menu-group">
             <button class="admin-menu-toggle" type="button">
-                Result
+                Schools
                 <span></span>
             </button>
             <div class="admin-submenu">
-                <a class="admin-nav-link" href="{{ route('admin.results.index') }}">All Results</a>
-            </div>
+                <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
+                    </div>
         </div>
+
+        <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
+        <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
     </nav>
 </aside>
+
+
+
+

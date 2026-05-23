@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\School;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,7 +36,12 @@ class AuthController extends Controller
 
     public function showRegister(): View
     {
-        return view('auth.register');
+        $schools = School::query()
+            ->where('status', 'active')
+            ->orderBy('title')
+            ->get();
+
+        return view('auth.register', compact('schools'));
     }
 
     public function register(Request $request): RedirectResponse
@@ -43,12 +49,29 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:30'],
+            'school_name' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
+
+        $schoolName = trim($data['school_name']);
+        $school = School::query()
+            ->whereRaw('LOWER(title) = ?', [mb_strtolower($schoolName)])
+            ->first();
+
+        if (! $school) {
+            $school = School::create([
+                'title' => $schoolName,
+                'address' => 'Added during student registration',
+                'status' => 'pending',
+            ]);
+        }
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'phone' => $data['phone'],
+            'school_id' => $school->id,
             'password' => $data['password'],
             'is_admin' => false,
         ]);

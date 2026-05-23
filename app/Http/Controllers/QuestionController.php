@@ -17,9 +17,8 @@ class QuestionController extends Controller
     {
         $classes = AcademicClass::query()->orderBy('name')->get();
         $subjects = Subject::query()->orderBy('name')->get();
-        $lessons = Chapter::query()->with(['academicClass', 'subject'])->orderBy('name')->get();
 
-        return view('admin.questions.create', compact('classes', 'subjects', 'lessons'));
+        return view('admin.questions.create', compact('classes', 'subjects'));
     }
 
     public function storeStandalone(Request $request): RedirectResponse
@@ -54,11 +53,15 @@ class QuestionController extends Controller
 
         $academicClass = AcademicClass::findOrFail($data['academic_class_id']);
         $subject = Subject::findOrFail($data['subject_id']);
-        $chapter = Chapter::findOrFail($data['chapter_id']);
+        $chapter = Chapter::query()
+            ->whereKey($data['chapter_id'])
+            ->where('academic_class_id', $academicClass->id)
+            ->where('subject_id', $subject->id)
+            ->first();
 
-        if ($chapter->academic_class_id !== $academicClass->id || $chapter->subject_id !== $subject->id) {
+        if (! $chapter) {
             throw ValidationException::withMessages([
-                'chapter_id' => 'Please choose a chapter that belongs to the selected class and subject.',
+                'chapter_id' => 'Selected class and subject অনুযায়ী সঠিক oddhay / chapter select করুন।',
             ]);
         }
 

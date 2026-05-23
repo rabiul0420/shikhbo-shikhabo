@@ -4,6 +4,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AcademicStructureController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminResultController;
+use App\Http\Controllers\AdminSchoolController;
+use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\QuestionController;
@@ -19,6 +21,10 @@ Route::get('/', function () {
     return view('welcome', compact('exams'));
 })->name('home');
 
+Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
+Route::view('/about-us', 'pages.about-us')->name('about-us');
+Route::view('/contact-us', 'pages.contact-us')->name('contact-us');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -32,10 +38,17 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.index');
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
+    Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
+    Route::get('/admin/students', [AdminStudentController::class, 'index'])->name('admin.students.index');
+    Route::get('/admin/schools', [AdminSchoolController::class, 'index'])->name('admin.schools.index');
+    Route::post('/admin/schools', [AdminSchoolController::class, 'store'])->name('admin.schools.store');
+    Route::patch('/admin/schools/{school}', [AdminSchoolController::class, 'update'])->name('admin.schools.update');
+    Route::delete('/admin/schools/{school}', [AdminSchoolController::class, 'destroy'])->name('admin.schools.destroy');
     Route::redirect('/admin/academic', '/admin/academic/classes')->name('admin.academic.index');
     Route::get('/admin/academic/classes', [AcademicStructureController::class, 'classes'])->name('admin.academic.classes');
-    Route::get('/admin/academic/lessons', [AcademicStructureController::class, 'lessons'])->name('admin.academic.lessons');
+    Route::get('/admin/academic/subjects', [AcademicStructureController::class, 'subjects'])->name('admin.academic.subjects');
+    Route::get('/admin/academic/chapters/options', [AcademicStructureController::class, 'chapterOptions'])->name('admin.academic.chapters.options');
     Route::get('/admin/academic/chapters', [AcademicStructureController::class, 'chapters'])->name('admin.academic.chapters');
     Route::post('/admin/classes', [AcademicStructureController::class, 'storeClass'])->name('admin.classes.store');
     Route::patch('/admin/classes/{academicClass}', [AcademicStructureController::class, 'updateClass'])->name('admin.classes.update');
@@ -56,6 +69,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::view('/my-profile', 'profile.show')->name('profile.show');
+    Route::get('/my-results', [ExamAttemptController::class, 'myResults'])->name('exam-attempts.index');
+    Route::get('/exams/{exam}/results', [ExamAttemptController::class, 'allResults'])->name('exams.results');
     Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
     Route::post('/exams/{exam}/submit', [ExamAttemptController::class, 'submit'])->name('exams.submit');
     Route::get('/exam-attempts/{attempt}', [ExamAttemptController::class, 'result'])->name('exam-attempts.result');

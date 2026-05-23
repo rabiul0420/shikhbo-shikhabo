@@ -23,13 +23,12 @@ class ExamController extends Controller
             ->get();
         $classes = AcademicClass::query()->orderBy('name')->get();
         $subjects = Subject::query()->orderBy('name')->get();
-        $lessons = Chapter::query()->with(['academicClass', 'subject'])->orderBy('name')->get();
         $questions = Question::query()
             ->with(['academicClass', 'subject', 'chapter'])
             ->latest()
             ->get();
 
-        return view('admin.exams.index', compact('exams', 'classes', 'subjects', 'lessons', 'questions'));
+        return view('admin.exams.index', compact('exams', 'classes', 'subjects', 'questions'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -45,11 +44,15 @@ class ExamController extends Controller
 
         $academicClass = AcademicClass::findOrFail($data['academic_class_id']);
         $subject = Subject::findOrFail($data['subject_id']);
-        $chapter = Chapter::findOrFail($data['chapter_id']);
+        $chapter = Chapter::query()
+            ->whereKey($data['chapter_id'])
+            ->where('academic_class_id', $academicClass->id)
+            ->where('subject_id', $subject->id)
+            ->first();
 
-        if ($chapter->academic_class_id !== $academicClass->id || $chapter->subject_id !== $subject->id) {
+        if (! $chapter) {
             throw ValidationException::withMessages([
-                'chapter_id' => 'Please choose a lesson that belongs to the selected class and subject.',
+                'chapter_id' => 'Selected class and subject অনুযায়ী সঠিক oddhay / chapter select করুন।',
             ]);
         }
 
@@ -62,7 +65,7 @@ class ExamController extends Controller
 
         if ($questionIds->count() !== count(array_unique($data['question_ids']))) {
             throw ValidationException::withMessages([
-                'question_ids' => 'Please choose only questions from the selected class, subject, and lesson.',
+                'question_ids' => 'Selected class, subject এবং oddhay / chapter অনুযায়ী question select করুন।',
             ]);
         }
 
@@ -99,11 +102,15 @@ class ExamController extends Controller
 
         $academicClass = AcademicClass::findOrFail($data['academic_class_id']);
         $subject = Subject::findOrFail($data['subject_id']);
-        $chapter = Chapter::findOrFail($data['chapter_id']);
+        $chapter = Chapter::query()
+            ->whereKey($data['chapter_id'])
+            ->where('academic_class_id', $academicClass->id)
+            ->where('subject_id', $subject->id)
+            ->first();
 
-        if ($chapter->academic_class_id !== $academicClass->id || $chapter->subject_id !== $subject->id) {
+        if (! $chapter) {
             throw ValidationException::withMessages([
-                'chapter_id' => 'Please choose a lesson that belongs to the selected class and subject.',
+                'chapter_id' => 'Selected class and subject অনুযায়ী সঠিক oddhay / chapter select করুন।',
             ]);
         }
 
@@ -116,7 +123,7 @@ class ExamController extends Controller
 
         if ($questionIds->count() !== count(array_unique($data['question_ids']))) {
             throw ValidationException::withMessages([
-                'question_ids' => 'Please choose only questions from the selected class, subject, and lesson.',
+                'question_ids' => 'Selected class, subject এবং oddhay / chapter অনুযায়ী question select করুন।',
             ]);
         }
 

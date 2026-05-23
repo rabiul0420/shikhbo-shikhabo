@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'MCQ Project' }}</title>
+    <title>{{ $title ?? 'Shikhbo Shikhabo' }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
     @stack('styles')
     <style>
         :root {
@@ -34,11 +35,20 @@
         .shell { width: min(1280px, calc(100% - 32px)); margin: 0 auto; }
         .topbar { background: #ffffff; color: var(--text); border-bottom: 1px solid #dee2e6; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
         .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 0; }
-        .brand { font-size: 20px; font-weight: 800; color: #343a40; }
+        .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 20px; font-weight: 800; color: #343a40; }
+        .brand-logo { width: 34px; height: 34px; flex: 0 0 auto; }
         .nav { display: flex; gap: 10px; flex-wrap: wrap; }
         .nav a, .nav-button { padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 4px; color: #343a40; background: transparent; min-height: auto; font-weight: 600; }
         .nav a:hover, .nav-button:hover { background: #f8f9fa; }
-        .main { padding: 22px 0 56px; }
+        .main { padding: 22px 0 56px; min-height: calc(100vh - 154px); }
+        .site-footer { background: #ffffff; border-top: 1px solid var(--line); color: var(--muted); }
+        .footer-inner { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 24px; align-items: center; padding: 22px 0; }
+        .footer-brand { display: grid; gap: 6px; }
+        .footer-brand .brand { font-size: 18px; width: fit-content; }
+        .footer-brand p { margin: 0; font-size: 13px; }
+        .footer-links { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; font-size: 13px; font-weight: 700; }
+        .footer-links a:hover { color: var(--primary); }
+        .footer-copy { font-size: 13px; color: var(--muted); }
         .page-head, .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
         .section-head.compact { align-items: center; margin-bottom: 12px; }
         h1 { margin: 0; font-size: 34px; line-height: 1.08; letter-spacing: 0; }
@@ -52,7 +62,7 @@
         .admin-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 0; align-items: start; background: #fff; border: 1px solid #d8d8d8; box-shadow: none; min-height: calc(100vh - 130px); }
         .admin-sidebar { position: sticky; top: 0; min-height: calc(100vh - 92px); background: #332f2d; color: #d8d4d1; padding: 0; border-right: 1px solid rgba(255,255,255,.06); }
         .admin-brand { display: flex; align-items: center; gap: 11px; min-height: 58px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 8px; background: #2d2927; }
-        .admin-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #007bff; color: #fff; font-weight: 900; box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
+        .admin-logo { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 10px; box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
         .admin-brand h2 { font-size: 18px; margin: 0; color: #fff; font-weight: 500; }
         .admin-brand p { color: #adb5bd; font-size: 13px; margin: 2px 0 0; }
         .admin-menu { display: grid; gap: 4px; padding: 8px; }
@@ -64,6 +74,7 @@
         .admin-submenu { display: none; gap: 2px; padding-left: 0; margin-left: 0; }
         .admin-menu-group.is-open .admin-submenu { display: grid; }
         .admin-menu a { display: block; padding: 10px 12px; border-left: 3px solid transparent; border-radius: 0; color: #d8d4d1; font-weight: 500; transition: background .18s ease, color .18s ease, border-color .18s ease; }
+        .admin-menu a.admin-menu-direct { min-height: 34px; padding: 7px 10px; border-left: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
         .admin-menu a:hover { background: rgba(255,255,255,.07); border-left-color: #f0f0f0; color: #fff; }
         .admin-menu a.is-active { background: #007bff; border-left-color: #8ec5ff; color: #fff; }
         .admin-content { min-width: 0; display: grid; gap: 14px; padding: 0 14px 16px; background: #fff; }
@@ -92,6 +103,14 @@
         .admin-grid-tight { align-items: stretch; }
         .panel { background: var(--panel); border: 1px solid #dcdcdc; border-radius: 0; padding: 14px; box-shadow: none; }
         .panel-soft { background: #fafafa; border: 1px solid #dcdcdc; border-radius: 0; padding: 14px; }
+        .content-panel { max-width: 860px; }
+        .content-panel h2 { margin-top: 18px; }
+        .content-panel h2:first-child { margin-top: 0; }
+        .profile-list { display: grid; gap: 10px; margin: 0; }
+        .profile-list div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+        .profile-list div:last-child { border-bottom: 0; }
+        .profile-list dt { color: var(--muted); font-weight: 800; }
+        .profile-list dd { margin: 0; }
         .stack { display: grid; gap: 14px; }
         .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .between { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
@@ -159,6 +178,10 @@
         .admin-page .brand { color: #fff; }
         .admin-page .nav a, .admin-page .nav-button { color: #f1efee; border-color: rgba(255,255,255,.18); }
         .admin-page .nav a:hover, .admin-page .nav-button:hover { background: rgba(255,255,255,.08); }
+        .admin-page .site-footer { background: #3f3a37; border-top-color: rgba(255,255,255,.12); }
+        .admin-page .site-footer .brand { color: #fff; }
+        .admin-page .site-footer, .admin-page .footer-copy, .admin-page .footer-brand p { color: #d8d4d1; }
+        .admin-page .footer-links a:hover { color: #fff; }
         .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 36px 16px; background: rgba(15, 23, 42, .52); }
         .modal-backdrop.is-open { display: flex; }
         .modal-panel { width: min(620px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 20px 45px rgba(0,0,0,.24); padding: 18px; }
@@ -177,6 +200,8 @@
 
         @media (max-width: 760px) {
             .topbar-inner, .page-head, .admin-hero, .quiz-card-head, .between { align-items: flex-start; flex-direction: column; }
+            .footer-inner { grid-template-columns: 1fr; }
+            .footer-links { justify-content: flex-start; }
             .admin-layout { grid-template-columns: 1fr; }
             .admin-sidebar { position: static; }
             .admin-menu, .admin-grid, .grid-2 { grid-template-columns: 1fr; }
@@ -195,21 +220,38 @@
 <body class="{{ request()->routeIs('admin.*') ? 'admin-page' : '' }}">
     <header class="topbar">
         <div class="shell topbar-inner">
-            <a class="brand" href="{{ route('home') }}">MCQ Project</a>
+            <a class="brand" href="{{ route('home') }}">
+                <img class="brand-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
+                <span>Shikhbo Shikhabo</span>
+            </a>
             <nav class="nav">
-                <a href="{{ route('home') }}">Take Exam</a>
-                @auth
-                    @if (auth()->user()->is_admin)
-                        <a href="{{ route('admin.index') }}">Admin</a>
-                    @endif
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button class="nav-button" type="submit">Logout</button>
-                    </form>
+                @if (request()->routeIs('admin.*'))
+                    <a href="{{ route('home') }}">Take Exam</a>
+                    <a href="{{ route('admin.index') }}">Admin</a>
+                    @auth
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button class="nav-button" type="submit">Logout</button>
+                        </form>
+                    @endauth
                 @else
-                    <a href="{{ route('login') }}">Login</a>
-                    <a href="{{ route('register') }}">Register</a>
-                @endauth
+                    <a href="{{ route('about-us') }}">About Us</a>
+                    <a href="{{ route('contact-us') }}">Contact Us</a>
+                    <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    @auth
+                        <a href="{{ route('profile.show') }}">My Profile</a>
+                        <a href="{{ route('exam-attempts.index') }}">My Result</a>
+                        @if (auth()->user()->is_admin)
+                            <a href="{{ route('admin.index') }}">Admin</a>
+                        @endif
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button class="nav-button" type="submit">Logout</button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}">Login</a>
+                    @endauth
+                @endif
             </nav>
         </div>
     </header>
@@ -232,6 +274,32 @@
 
         @yield('content')
     </main>
+
+    @unless (request()->routeIs('admin.*'))
+        <footer class="site-footer">
+            <div class="shell footer-inner">
+                <div class="footer-brand">
+                    <a class="brand" href="{{ route('home') }}">
+                        <img class="brand-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
+                        <span>Shikhbo Shikhabo</span>
+                    </a>
+                    <p>Chapter-wise exam practice and learning support.</p>
+                    <span class="footer-copy">&copy; {{ date('Y') }} Shikhbo Shikhabo. All rights reserved.</span>
+                </div>
+                <nav class="footer-links" aria-label="Footer navigation">
+                    <a href="{{ route('about-us') }}">About Us</a>
+                    <a href="{{ route('contact-us') }}">Contact Us</a>
+                    <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    @auth
+                        <a href="{{ route('profile.show') }}">My Profile</a>
+                        <a href="{{ route('exam-attempts.index') }}">My Result</a>
+                    @else
+                        <a href="{{ route('login') }}">Login</a>
+                    @endauth
+                </nav>
+            </div>
+        </footer>
+    @endunless
     @stack('scripts')
 </body>
 </html>

@@ -4,23 +4,15 @@
     <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="admin-brand">
-                <span class="admin-mark">M</span>
+                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
                 <div>
-                    <h2>MCQ Admin</h2>
+                    <h2>Shikhbo Shikhabo Admin</h2>
                     <p>{{ auth()->user()->name }}</p>
                 </div>
             </div>
 
             <nav class="admin-menu" aria-label="Admin navigation">
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Main Menu
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-                    </div>
-                </div>
+                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
 
                 <div class="admin-menu-group">
                     <button class="admin-menu-toggle" type="button">
@@ -29,7 +21,7 @@
                     </button>
                     <div class="admin-submenu">
                         <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.lessons') }}">Lesson</a>
+                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
                         <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
                     </div>
                 </div>
@@ -58,23 +50,18 @@
 
                 <div class="admin-menu-group">
                     <button class="admin-menu-toggle" type="button">
-                        Result
+                        Schools
                         <span></span>
                     </button>
                     <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.results.index') }}">All Results</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
                     </div>
                 </div>
 
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Site
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a href="{{ route('home') }}">Public Exams</a>
-                    </div>
-                </div>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
+
             </nav>
         </aside>
 
@@ -109,13 +96,8 @@
                     </label>
                     <label>
                         Oddhay / Chapter
-                        <select name="chapter_id">
-                            <option value="">Select oddhay / chapter</option>
-                            @foreach ($lessons as $lesson)
-                                <option value="{{ $lesson->id }}" @selected((string) old('chapter_id') === (string) $lesson->id)>
-                                    {{ $lesson->academicClass->name }} / {{ $lesson->subject->name }} / {{ $lesson->name }}
-                                </option>
-                            @endforeach
+                        <select name="chapter_id" data-selected-chapter="{{ old('chapter_id') }}" disabled>
+                            <option value="">Select class and subject first</option>
                         </select>
                     </label>
                     <label>
@@ -151,8 +133,79 @@
                     $group.toggleClass('is-open');
                     $submenu.stop(true, true).slideToggle(180);
                 });
+
+                const $classSelect = $('select[name="academic_class_id"]');
+                const $subjectSelect = $('select[name="subject_id"]');
+                const $chapterSelect = $('select[name="chapter_id"]');
+                const chapterOptionsUrl = @json(route('admin.academic.chapters.options'));
+
+                function setChapterPlaceholder(text) {
+                    $chapterSelect.empty().append($('<option>', {
+                        value: '',
+                        text,
+                    }));
+                }
+
+                function loadChapterOptions() {
+                    const selectedClass = $classSelect.val();
+                    const selectedSubject = $subjectSelect.val();
+
+                    if (! selectedClass || ! selectedSubject) {
+                        setChapterPlaceholder('Select class and subject first');
+                        $chapterSelect.prop('disabled', true);
+                        return;
+                    }
+
+                    const selectedChapter = String($chapterSelect.data('selected-chapter') || '');
+
+                    setChapterPlaceholder('Loading chapters...');
+                    $chapterSelect.prop('disabled', true);
+
+                    $.getJSON(chapterOptionsUrl, {
+                        academic_class_id: selectedClass,
+                        subject_id: selectedSubject,
+                    }).done(function (response) {
+                        const chapters = response.chapters || [];
+
+                        setChapterPlaceholder(chapters.length ? 'Select oddhay / chapter' : 'No chapter found');
+
+                        chapters.forEach(function (chapter) {
+                            $chapterSelect.append($('<option>', {
+                                value: chapter.id,
+                                text: chapter.name,
+                            }));
+                        });
+
+                        if (selectedChapter && $chapterSelect.find('option[value="' + selectedChapter + '"]').length) {
+                            $chapterSelect.val(selectedChapter);
+                        } else {
+                            $chapterSelect.data('selected-chapter', '');
+                        }
+
+                        $chapterSelect.prop('disabled', chapters.length === 0);
+                    }).fail(function () {
+                        setChapterPlaceholder('Could not load chapters');
+                        $chapterSelect.prop('disabled', true);
+                    });
+                }
+
+                $classSelect.on('change', function () {
+                    $chapterSelect.data('selected-chapter', '');
+                    loadChapterOptions();
+                });
+
+                $subjectSelect.on('change', function () {
+                    $chapterSelect.data('selected-chapter', '');
+                    loadChapterOptions();
+                });
+
+                loadChapterOptions();
             });
         }
     </script>
 @endpush
+
+
+
+
 

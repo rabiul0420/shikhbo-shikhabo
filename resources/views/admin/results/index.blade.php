@@ -8,23 +8,15 @@
     <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="admin-brand">
-                <span class="admin-mark">M</span>
+                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
                 <div>
-                    <h2>MCQ Admin</h2>
+                    <h2>Shikhbo Shikhabo Admin</h2>
                     <p>{{ auth()->user()->name }}</p>
                 </div>
             </div>
 
             <nav class="admin-menu" aria-label="Admin navigation">
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Main Menu
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-                    </div>
-                </div>
+                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
 
                 <div class="admin-menu-group">
                     <button class="admin-menu-toggle" type="button">
@@ -33,7 +25,7 @@
                     </button>
                     <div class="admin-submenu">
                         <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.lessons') }}">Lesson</a>
+                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
                         <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
                     </div>
                 </div>
@@ -60,15 +52,19 @@
                     </div>
                 </div>
 
-                <div class="admin-menu-group is-open">
+                <div class="admin-menu-group">
                     <button class="admin-menu-toggle" type="button">
-                        Result
+                        Schools
                         <span></span>
                     </button>
                     <div class="admin-submenu">
-                        <a class="admin-nav-link is-active" href="{{ route('admin.results.index') }}">All Results</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
                     </div>
                 </div>
+
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
+                <a class="admin-nav-link admin-menu-direct is-active" href="{{ route('admin.results.index') }}">Result</a>
             </nav>
         </aside>
 
@@ -77,23 +73,46 @@
                 <div class="section-head">
                     <div>
                         <span class="eyebrow">Result</span>
-                        <h2>Exam Results</h2>
+                        <h2>{{ $exam ? $exam->title . ' Results' : 'Exam Results' }}</h2>
+                        @if ($exam)
+                            <p class="muted">
+                            {{ $exam->academicClass->name }} / {{ $exam->subject->name }} / {{ $exam->chapter->display_name }}
+                            </p>
+                        @endif
                     </div>
-                    <span class="count-badge">{{ $examAttempts->count() }}</span>
+                    <span class="count-badge">{{ $exam ? $participantCount : $examAttempts->count() }}</span>
                 </div>
 
                 @if ($examAttempts->isEmpty())
-                    <p class="muted">No exam results found yet.</p>
+                    <p class="muted">{{ $exam ? 'No participants found for this exam yet.' : 'No exam results found yet.' }}</p>
                 @else
+                    @if ($exam)
+                        <div class="stat-grid" style="margin-bottom: 14px;">
+                            <div class="stat-card stat-info">
+                                <i>#</i>
+                                <strong>{{ $participantCount }}</strong>
+                                <span>Total Participants</span>
+                            </div>
+                            <div class="stat-card stat-success">
+                                <i>H</i>
+                                <strong>{{ $highestAttempt->score }} / {{ $highestAttempt->total_marks }}</strong>
+                                <span>Highest Mark</span>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="table-wrap">
                         <table id="exam-results-table" class="display admin-data-table">
                             <thead>
                                 <tr>
+                                    @if ($exam)
+                                        <th>Position</th>
+                                    @endif
                                     <th>Student</th>
                                     <th>Exam</th>
                                     <th>Class</th>
                                     <th>Subject</th>
-                                    <th>Lesson</th>
+                                    <th>Oddhay / Chapter</th>
                                     <th>Score</th>
                                     <th>Submitted</th>
                                     <th>Action</th>
@@ -102,11 +121,14 @@
                             <tbody>
                                 @foreach ($examAttempts as $attempt)
                                     <tr>
+                                        @if ($exam)
+                                            <td>{{ $attemptPositions[$attempt->id] }}</td>
+                                        @endif
                                         <td>{{ $attempt->user->name }}</td>
                                         <td>{{ $attempt->exam->title }}</td>
                                         <td>{{ $attempt->exam->academicClass->name }}</td>
                                         <td>{{ $attempt->exam->subject->name }}</td>
-                                        <td>{{ $attempt->exam->chapter->name }}</td>
+                                            <td>{{ $attempt->exam->chapter->display_name }}</td>
                                         <td>{{ $attempt->score }} / {{ $attempt->total_marks }}</td>
                                         <td>{{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</td>
                                         <td>
@@ -140,7 +162,7 @@
                 if ($.fn.DataTable && $('#exam-results-table').length) {
                     $('#exam-results-table').DataTable({
                         pageLength: 10,
-                        order: [[6, 'desc']],
+                        order: @json($exam ? [[0, 'asc']] : [[6, 'desc']]),
                         columnDefs: [
                             { orderable: false, searchable: false, targets: -1 },
                         ],
@@ -150,4 +172,8 @@
         }
     </script>
 @endpush
+
+
+
+
 

@@ -1,14 +1,14 @@
-# MCQ Database Design
+# Shikhbo Shikhabo Database Design
 
-This project uses MySQL, Laravel migrations, and Eloquent models for the MCQ domain.
+Shikhbo Shikhabo uses MySQL, Laravel migrations, and Eloquent models for exam questions and attempts.
 
 ## Connection
 
 - Driver: MySQL
-- Database: `mcq_project`
+- Database: `shikhbo_shikhabo`
 - Host: `127.0.0.1`
 - Port: `3306`
-- Username: `mcq_user`
+- Username: `shikhbo_user`
 
 ## Tables
 
@@ -28,7 +28,7 @@ Groups quizzes by topic, subject, or exam type.
 
 ### quizzes
 
-Stores each MCQ test or exam.
+Stores each test or exam.
 
 - `id`
 - `category_id`

@@ -10,6 +10,45 @@ use Illuminate\View\View;
 
 class ExamAttemptController extends Controller
 {
+    public function myResults(Request $request): View
+    {
+        $attempts = ExamAttempt::query()
+            ->with(['exam.academicClass', 'exam.subject', 'exam.chapter'])
+            ->where('user_id', $request->user()->id)
+            ->latest('submitted_at')
+            ->latest()
+            ->get();
+
+        return view('exam-attempts.index', compact('attempts'));
+    }
+
+    public function allResults(Exam $exam): View
+    {
+        $exam->load(['academicClass', 'subject', 'chapter']);
+
+        $attempts = ExamAttempt::query()
+            ->with('user')
+            ->where('exam_id', $exam->id)
+            ->orderByDesc('score')
+            ->latest('submitted_at')
+            ->get();
+
+        $highestAttempt = $attempts->sortByDesc('score')->first();
+        $attemptPositions = $this->attemptPositions($attempts);
+        $myAttempt = $attempts
+            ->where('user_id', auth()->id())
+            ->sortByDesc('score')
+            ->first();
+
+        return view('exam-attempts.all-results', compact(
+            'exam',
+            'attempts',
+            'highestAttempt',
+            'attemptPositions',
+            'myAttempt'
+        ));
+    }
+
     public function show(Exam $exam): View
     {
         $exam->load(['academicClass', 'subject', 'chapter', 'questions.options']);
@@ -76,15 +115,33 @@ class ExamAttemptController extends Controller
         return redirect()->route('exam-attempts.result', $attempt);
     }
 
-    public function result(ExamAttempt $attempt): View
+    public function result(Request $request, ExamAttempt $attempt): View
     {
         abort_unless(
-            request()->user()->is_admin || $attempt->user_id === request()->user()->id,
+            $request->user()->is_admin || (int) $attempt->user_id === (int) $request->user()->id,
             403
         );
 
         $attempt->load(['exam.questions.options', 'answers.option']);
 
         return view('exam-attempts.result', compact('attempt'));
+    }
+
+    private function attemptPositions($attempts): array
+    {
+        $positions = [];
+        $currentPosition = 0;
+        $previousScore = null;
+
+        foreach ($attempts->sortByDesc('score')->values() as $attempt) {
+            if ($previousScore === null || (int) $attempt->score !== (int) $previousScore) {
+                $currentPosition++;
+            }
+
+            $positions[$attempt->id] = $currentPosition;
+            $previousScore = $attempt->score;
+        }
+
+        return $positions;
     }
 }

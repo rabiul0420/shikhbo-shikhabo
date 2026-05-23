@@ -10,8 +10,16 @@ class Chapter extends Model
     protected $fillable = [
         'academic_class_id',
         'subject_id',
+        'chapter_no',
         'name',
     ];
+
+    public function getDisplayNameAttribute(): string
+    {
+        return filled($this->chapter_no)
+            ? $this->chapter_no . ' - ' . $this->name
+            : $this->name;
+    }
 
     public function academicClass(): BelongsTo
     {

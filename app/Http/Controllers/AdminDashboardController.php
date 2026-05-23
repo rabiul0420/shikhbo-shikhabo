@@ -19,11 +19,11 @@ class AdminDashboardController extends Controller
 
         $classes = AcademicClass::query()->orderBy('name')->get();
         $subjects = Subject::query()->orderBy('name')->get();
-        $lessons = Chapter::query()
+        $chapters = Chapter::query()
             ->with(['academicClass', 'subject'])
             ->orderBy('name')
             ->get();
 
-        return view('admin.index', compact('questions', 'classes', 'subjects', 'lessons'));
+        return view('admin.index', compact('questions', 'classes', 'subjects', 'chapters'));
     }
 }

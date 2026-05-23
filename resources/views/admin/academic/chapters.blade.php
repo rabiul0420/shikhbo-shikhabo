@@ -32,8 +32,9 @@
                         <thead>
                             <tr>
                                 <th>Class</th>
-                                <th>Lesson</th>
-                                <th>Name</th>
+                                <th>Subject</th>
+                                <th>Chapter No</th>
+                                <th>Chapter Name</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -42,6 +43,7 @@
                                 <tr>
                                     <td>{{ $chapter->academicClass->name }}</td>
                                     <td>{{ $chapter->subject->name }}</td>
+                                    <td>{{ $chapter->chapter_no ?: '-' }}</td>
                                     <td>{{ $chapter->name }}</td>
                                     <td>
                                         <div class="table-actions">
@@ -82,17 +84,21 @@
                             </select>
                         </label>
                         <label>
-                            Lesson
+                            Subject
                             <select name="subject_id">
-                                <option value="">Select lesson</option>
+                                <option value="">Select subject</option>
                                 @foreach ($subjects as $subject)
                                     <option value="{{ $subject->id }}">{{ $subject->name }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label>
-                            Oddhay / Chapter name
-                            <input name="name" placeholder="Chapter 1">
+                            Chapter No
+                            <input name="chapter_no" placeholder="Lesson 1">
+                        </label>
+                        <label>
+                            Chapter Name
+                            <input name="name" placeholder="Introduction">
                         </label>
                         <div class="modal-actions">
                             <button class="button secondary js-close-modal" type="button" data-modal-close="add-chapter">Cancel</button>
@@ -108,7 +114,7 @@
                         <div class="modal-head">
                             <div>
                                 <span class="eyebrow">Edit Oddhay / Chapter</span>
-                                <h3 id="edit-chapter-{{ $chapter->id }}-title">{{ $chapter->name }}</h3>
+                                <h3 id="edit-chapter-{{ $chapter->id }}-title">{{ $chapter->display_name }}</h3>
                             </div>
                             <button class="button secondary small js-close-modal" type="button" data-modal-close="edit-chapter-{{ $chapter->id }}">Close</button>
                         </div>
@@ -125,7 +131,7 @@
                                 </select>
                             </label>
                             <label>
-                                Lesson
+                                Subject
                                 <select name="subject_id">
                                     @foreach ($subjects as $subject)
                                         <option value="{{ $subject->id }}" @selected($chapter->subject_id === $subject->id)>{{ $subject->name }}</option>
@@ -133,7 +139,11 @@
                                 </select>
                             </label>
                             <label>
-                                Oddhay / Chapter name
+                                Chapter No
+                                <input name="chapter_no" value="{{ $chapter->chapter_no }}">
+                            </label>
+                            <label>
+                                Chapter Name
                                 <input name="name" value="{{ $chapter->name }}">
                             </label>
                             <div class="modal-actions">

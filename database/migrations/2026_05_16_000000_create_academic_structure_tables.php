@@ -25,6 +25,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('academic_class_id')->constrained()->cascadeOnDelete();
             $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
+            $table->string('chapter_no')->nullable();
             $table->string('name');
             $table->timestamps();
 

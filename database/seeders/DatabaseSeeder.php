@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\School;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -17,10 +18,54 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        School::query()
+            ->where('title', 'Shikhbo Shikhabo')
+            ->whereNull('address')
+            ->delete();
+
+        foreach ([
+            [
+                'title' => 'Shikhbo Shikhabo School',
+                'address' => 'Mirpur, Dhaka',
+                'status' => 'active',
+            ],
+            [
+                'title' => 'Green Valley School',
+                'address' => 'Dhanmondi, Dhaka',
+                'status' => 'active',
+            ],
+            [
+                'title' => 'Sunrise Model School',
+                'address' => 'Uttara, Dhaka',
+                'status' => 'active',
+            ],
+            [
+                'title' => 'Knowledge Academy',
+                'address' => 'Chattogram',
+                'status' => 'pending',
+            ],
+            [
+                'title' => 'Future Scholars School',
+                'address' => 'Sylhet',
+                'status' => 'pending',
+            ],
+        ] as $school) {
+            School::updateOrCreate(
+                ['title' => $school['title']],
+                $school,
+            );
+        }
+
+        $defaultSchoolId = School::query()
+            ->where('title', 'Shikhbo Shikhabo School')
+            ->value('id');
+
         User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin User',
+                'phone' => '01000000000',
+                'school_id' => $defaultSchoolId,
                 'password' => 'password',
                 'is_admin' => true,
             ],
@@ -30,6 +75,8 @@ class DatabaseSeeder extends Seeder
             ['email' => 'student@example.com'],
             [
                 'name' => 'Student User',
+                'phone' => '01900000000',
+                'school_id' => $defaultSchoolId,
                 'password' => 'password',
                 'is_admin' => false,
             ],

@@ -4,23 +4,15 @@
     <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="admin-brand">
-                <span class="admin-mark">M</span>
+                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
                 <div>
-                    <h2>MCQ Admin</h2>
+                    <h2>Shikhbo Shikhabo Admin</h2>
                     <p>{{ auth()->user()->name }}</p>
                 </div>
             </div>
 
             <nav class="admin-menu" aria-label="Admin navigation">
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Main Menu
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-                    </div>
-                </div>
+                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
 
                 <div class="admin-menu-group">
                     <button class="admin-menu-toggle" type="button">
@@ -29,7 +21,7 @@
                     </button>
                     <div class="admin-submenu">
                         <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.lessons') }}">Lesson</a>
+                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
                         <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
                     </div>
                 </div>
@@ -58,13 +50,17 @@
 
                 <div class="admin-menu-group">
                     <button class="admin-menu-toggle" type="button">
-                        Result
+                        Schools
                         <span></span>
                     </button>
                     <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.results.index') }}">All Results</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
+                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
                     </div>
                 </div>
+
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
             </nav>
         </aside>
 
@@ -91,7 +87,7 @@
                                     <th>Title</th>
                                     <th>Class</th>
                                     <th>Subject</th>
-                                    <th>Lesson</th>
+                                    <th>Oddhay / Chapter</th>
                                     <th>Questions</th>
                                     <th>Actions</th>
                                 </tr>
@@ -102,10 +98,11 @@
                                         <td>{{ $exam->title }}</td>
                                         <td>{{ $exam->academicClass->name }}</td>
                                         <td>{{ $exam->subject->name }}</td>
-                                        <td>{{ $exam->chapter->name }}</td>
+                                        <td>{{ $exam->chapter->display_name }}</td>
                                         <td>{{ $exam->questions_count }}</td>
                                         <td>
                                             <div class="table-actions">
+                                                <a class="button secondary small" href="{{ route('admin.exams.results', $exam) }}">Result</a>
                                                 <button class="secondary-action small js-edit-exam" type="button" data-modal-target="edit-exam-{{ $exam->id }}">Edit</button>
                                                 <form method="POST" action="{{ route('exams.destroy', $exam) }}" onsubmit="return confirm('Delete this exam?')">
                                                     @csrf
@@ -143,7 +140,7 @@
                             <select id="exam-class" class="js-exam-class" name="academic_class_id">
                                 <option value="">Select class</option>
                                 @foreach ($classes as $class)
-                                    <option value="{{ $class->id }}">{{ $class->name }}</option>
+                                    <option value="{{ $class->id }}" @selected((string) old('academic_class_id') === (string) $class->id)>{{ $class->name }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -152,24 +149,14 @@
                             <select id="exam-subject" class="js-exam-subject" name="subject_id">
                                 <option value="">Select subject</option>
                                 @foreach ($subjects as $subject)
-                                    <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                                    <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label>
-                            Lesson
-                            <select id="exam-lesson" class="js-exam-lesson" name="chapter_id">
-                                <option value="">Select lesson</option>
-                                @foreach ($lessons as $lesson)
-                                    <option
-                                        value="{{ $lesson->id }}"
-                                        data-class-id="{{ $lesson->academic_class_id }}"
-                                        data-subject-id="{{ $lesson->subject_id }}"
-                                        data-lesson-name="{{ $lesson->name }}"
-                                    >
-                                        {{ $lesson->academicClass->name }} / {{ $lesson->subject->name }} / {{ $lesson->name }}
-                                    </option>
-                                @endforeach
+                            Oddhay / Chapter
+                            <select id="exam-chapter" class="js-exam-chapter" name="chapter_id" data-selected-chapter="{{ old('chapter_id') }}" disabled>
+                                <option value="">Select class and subject first</option>
                             </select>
                         </label>
                         <label>
@@ -178,9 +165,12 @@
                                 @foreach ($questions as $question)
                                     <option
                                         value="{{ $question->id }}"
+                                        data-class-id="{{ $question->academic_class_id }}"
+                                        data-subject-id="{{ $question->subject_id }}"
+                                        data-chapter-id="{{ $question->chapter_id }}"
                                         data-class="{{ $question->academicClass->name ?? '' }}"
                                         data-subject="{{ $question->subject->name ?? '' }}"
-                                        data-lesson="{{ $question->chapter->name ?? '' }}"
+                                        data-chapter="{{ $question->chapter->display_name ?? '' }}"
                                     >
                                         {{ $question->question_text }}
                                     </option>
@@ -218,7 +208,7 @@
                                 <select class="js-exam-class" name="academic_class_id">
                                     <option value="">Select class</option>
                                     @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}" @selected($exam->academic_class_id === $class->id)>{{ $class->name }}</option>
+                                        <option value="{{ $class->id }}" @selected((string) $exam->academic_class_id === (string) $class->id)>{{ $class->name }}</option>
                                     @endforeach
                                 </select>
                             </label>
@@ -227,25 +217,14 @@
                                 <select class="js-exam-subject" name="subject_id">
                                     <option value="">Select subject</option>
                                     @foreach ($subjects as $subject)
-                                        <option value="{{ $subject->id }}" @selected($exam->subject_id === $subject->id)>{{ $subject->name }}</option>
+                                        <option value="{{ $subject->id }}" @selected((string) $exam->subject_id === (string) $subject->id)>{{ $subject->name }}</option>
                                     @endforeach
                                 </select>
                             </label>
                             <label>
-                                Lesson
-                                <select class="js-exam-lesson" name="chapter_id">
-                                    <option value="">Select lesson</option>
-                                    @foreach ($lessons as $lesson)
-                                        <option
-                                            value="{{ $lesson->id }}"
-                                            data-class-id="{{ $lesson->academic_class_id }}"
-                                            data-subject-id="{{ $lesson->subject_id }}"
-                                            data-lesson-name="{{ $lesson->name }}"
-                                            @selected($exam->chapter_id === $lesson->id)
-                                        >
-                                            {{ $lesson->academicClass->name }} / {{ $lesson->subject->name }} / {{ $lesson->name }}
-                                        </option>
-                                    @endforeach
+                                Oddhay / Chapter
+                                <select class="js-exam-chapter" name="chapter_id" data-selected-chapter="{{ old('chapter_id', $exam->chapter_id) }}" disabled>
+                                    <option value="">Select class and subject first</option>
                                 </select>
                             </label>
                             <label>
@@ -254,9 +233,12 @@
                                     @foreach ($questions as $question)
                                         <option
                                             value="{{ $question->id }}"
+                                            data-class-id="{{ $question->academic_class_id }}"
+                                            data-subject-id="{{ $question->subject_id }}"
+                                            data-chapter-id="{{ $question->chapter_id }}"
                                             data-class="{{ $question->academicClass->name ?? '' }}"
                                             data-subject="{{ $question->subject->name ?? '' }}"
-                                            data-lesson="{{ $question->chapter->name ?? '' }}"
+                                            data-chapter="{{ $question->chapter->display_name ?? '' }}"
                                             @selected($exam->questions->contains($question))
                                         >
                                             {{ $question->question_text }}
@@ -291,49 +273,85 @@
 
                 const $class = $('#exam-class');
                 const $subject = $('#exam-subject');
-                const $lesson = $('#exam-lesson');
+                const $chapter = $('#exam-chapter');
                 const $questions = $('#exam-questions');
+                const chapterOptionsUrl = @json(route('admin.academic.chapters.options'));
 
-                function filterLessons($form) {
+                function setChapterPlaceholder($chapterField, text) {
+                    $chapterField.empty().append($('<option>', {
+                        value: '',
+                        text,
+                    }));
+                }
+
+                function loadChapterOptions($form) {
                     const $classField = $form.find('.js-exam-class, #exam-class');
                     const $subjectField = $form.find('.js-exam-subject, #exam-subject');
-                    const $lessonField = $form.find('.js-exam-lesson, #exam-lesson');
-                    const classId = $class.val();
-                    const subjectId = $subject.val();
+                    const $chapterField = $form.find('.js-exam-chapter, #exam-chapter');
+                    const selectedClass = $classField.val();
+                    const selectedSubject = $subjectField.val();
 
-                    $lessonField.find('option').each(function () {
-                        const $option = $(this);
-                        const isPlaceholder = ! $option.val();
-                        const matches = isPlaceholder || (
-                            (! $classField.val() || $option.data('class-id') == $classField.val())
-                            && (! $subjectField.val() || $option.data('subject-id') == $subjectField.val())
-                        );
+                    if (! selectedClass || ! selectedSubject) {
+                        setChapterPlaceholder($chapterField, 'Select class and subject first');
+                        $chapterField.prop('disabled', true);
+                        filterQuestions($form);
+                        return;
+                    }
 
-                        $option.prop('hidden', ! matches);
+                    const selectedChapter = String($chapterField.data('selected-chapter') || '');
+
+                    setChapterPlaceholder($chapterField, 'Loading chapters...');
+                    $chapterField.prop('disabled', true);
+
+                    $.getJSON(chapterOptionsUrl, {
+                        academic_class_id: selectedClass,
+                        subject_id: selectedSubject,
+                    }).done(function (response) {
+                        const chapters = response.chapters || [];
+
+                        setChapterPlaceholder($chapterField, chapters.length ? 'Select oddhay / chapter' : 'No chapter found');
+
+                        chapters.forEach(function (chapter) {
+                            $chapterField.append($('<option>', {
+                                value: chapter.id,
+                                text: chapter.name,
+                            }).attr('data-chapter-name', chapter.name));
+                        });
+
+                        if (selectedChapter && $chapterField.find('option[value="' + selectedChapter + '"]').length) {
+                            $chapterField.val(selectedChapter);
+                        } else {
+                            $chapterField.data('selected-chapter', '');
+                        }
+
+                        $chapterField.prop('disabled', chapters.length === 0);
+                        filterQuestions($form);
+                    }).fail(function () {
+                        setChapterPlaceholder($chapterField, 'Could not load chapters');
+                        $chapterField.prop('disabled', true);
+                        filterQuestions($form);
                     });
-
-                    filterQuestions($form);
                 }
 
                 function filterQuestions($form) {
                     const $classField = $form.find('.js-exam-class, #exam-class');
                     const $subjectField = $form.find('.js-exam-subject, #exam-subject');
-                    const $lessonField = $form.find('.js-exam-lesson, #exam-lesson');
+                    const $chapterField = $form.find('.js-exam-chapter, #exam-chapter');
                     const $questionsField = $form.find('.js-exam-questions, #exam-questions');
-                    const selectedLesson = $lessonField.find(':selected');
-                    const lessonText = selectedLesson.data('lesson-name');
-                    const classText = $classField.find(':selected').text().trim();
-                    const subjectText = $subjectField.find(':selected').text().trim();
-                    const hasFullSelection = $classField.val() && $subjectField.val() && $lessonField.val();
+                    const selectedClass = String($classField.val() || '');
+                    const selectedSubject = String($subjectField.val() || '');
+                    const selectedChapter = String($chapterField.val() || '');
+                    const hasFullSelection = selectedClass && selectedSubject && selectedChapter;
 
                     $questionsField.find('option').each(function () {
                         const $option = $(this);
                         const matches = hasFullSelection
-                            && $option.data('class') === classText
-                            && $option.data('subject') === subjectText
-                            && $option.data('lesson') === lessonText;
+                            && String($option.data('class-id') || '') === selectedClass
+                            && String($option.data('subject-id') || '') === selectedSubject
+                            && String($option.data('chapter-id') || '') === selectedChapter;
 
                         $option.prop('hidden', ! matches);
+                        $option.prop('disabled', ! matches);
                         if (! matches) {
                             $option.prop('selected', false);
                         }
@@ -342,17 +360,17 @@
 
                 $('.js-exam-form, form[action="{{ route('exams.store') }}"]').each(function () {
                     const $form = $(this);
-                    filterLessons($form);
-                    filterQuestions($form);
+                    loadChapterOptions($form);
                 });
 
                 $(document).on('change', '.js-exam-class, #exam-class, .js-exam-subject, #exam-subject', function () {
                     const $form = $(this).closest('form');
-                    $form.find('.js-exam-lesson, #exam-lesson').val('');
-                    filterLessons($form);
+                    $form.find('.js-exam-chapter, #exam-chapter').data('selected-chapter', '');
+                    loadChapterOptions($form);
                 });
 
-                $(document).on('change', '.js-exam-lesson, #exam-lesson', function () {
+                $(document).on('change', '.js-exam-chapter, #exam-chapter', function () {
+                    $(this).data('selected-chapter', $(this).val());
                     filterQuestions($(this).closest('form'));
                 });
 
@@ -390,4 +408,8 @@
         }
     </script>
 @endpush
+
+
+
+
 
