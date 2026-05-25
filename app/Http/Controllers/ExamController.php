@@ -38,6 +38,12 @@ class ExamController extends Controller
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
             'subject_id' => ['required', 'exists:subjects,id'],
             'chapter_id' => ['required', 'exists:chapters,id'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
+            'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
+            'first_prize' => ['nullable', 'string', 'max:255'],
+            'second_prize' => ['nullable', 'string', 'max:255'],
+            'third_prize' => ['nullable', 'string', 'max:255'],
             'question_ids' => ['required', 'array', 'min:1'],
             'question_ids.*' => ['integer', 'exists:questions,id'],
         ]);
@@ -75,6 +81,12 @@ class ExamController extends Controller
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
             'title' => $data['title'],
+            'starts_at' => $data['starts_at'],
+            'ends_at' => $data['ends_at'],
+            'duration_minutes' => $data['duration_minutes'],
+            'first_prize' => $data['first_prize'] ?? null,
+            'second_prize' => $data['second_prize'] ?? null,
+            'third_prize' => $data['third_prize'] ?? null,
         ]);
 
         $exam->questions()->sync($questionIds);
@@ -96,6 +108,12 @@ class ExamController extends Controller
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
             'subject_id' => ['required', 'exists:subjects,id'],
             'chapter_id' => ['required', 'exists:chapters,id'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
+            'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
+            'first_prize' => ['nullable', 'string', 'max:255'],
+            'second_prize' => ['nullable', 'string', 'max:255'],
+            'third_prize' => ['nullable', 'string', 'max:255'],
             'question_ids' => ['required', 'array', 'min:1'],
             'question_ids.*' => ['integer', 'exists:questions,id'],
         ]);
@@ -132,6 +150,12 @@ class ExamController extends Controller
             'academic_class_id' => $academicClass->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
+            'starts_at' => $data['starts_at'],
+            'ends_at' => $data['ends_at'],
+            'duration_minutes' => $data['duration_minutes'],
+            'first_prize' => $data['first_prize'] ?? null,
+            'second_prize' => $data['second_prize'] ?? null,
+            'third_prize' => $data['third_prize'] ?? null,
         ]);
 
         $exam->questions()->sync($questionIds);

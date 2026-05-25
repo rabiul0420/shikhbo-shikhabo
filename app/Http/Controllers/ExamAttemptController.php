@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\ExamAttempt;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ExamAttemptController extends Controller
@@ -55,7 +56,21 @@ class ExamAttemptController extends Controller
         $exam->load(['academicClass', 'subject', 'chapter', 'questions.options']);
         $this->authorizeExamForUser($exam);
 
-        return view('exams.show', compact('exam'));
+        abort_if($exam->scheduleStatus() === 'upcoming', 404);
+
+        $attemptStartedAt = null;
+
+        if (request()->user() && $exam->isRunning() && $exam->duration_minutes) {
+            $sessionKey = $this->examSessionKey($exam);
+            $attemptStartedAt = request()->session()->get($sessionKey);
+
+            if (! $attemptStartedAt) {
+                $attemptStartedAt = now()->toIso8601String();
+                request()->session()->put($sessionKey, $attemptStartedAt);
+            }
+        }
+
+        return view('exams.show', compact('exam', 'attemptStartedAt'));
     }
 
     public function submit(Request $request, Exam $exam): RedirectResponse
@@ -63,13 +78,33 @@ class ExamAttemptController extends Controller
         $exam->load('questions.options');
         $this->authorizeExamForUser($exam);
 
+        if (! $exam->isRunning()) {
+            throw ValidationException::withMessages([
+                'exam' => 'This exam is not running now.',
+            ]);
+        }
+
+        $attemptStartedAt = $this->attemptStartedAt($request, $exam);
+
+        if ($exam->duration_minutes && ! $attemptStartedAt) {
+            throw ValidationException::withMessages([
+                'exam' => 'Please open the exam page before submitting answers.',
+            ]);
+        }
+
+        if ($exam->duration_minutes && $attemptStartedAt->copy()->addMinutes($exam->duration_minutes)->isPast()) {
+            throw ValidationException::withMessages([
+                'exam' => 'The exam time is over.',
+            ]);
+        }
+
         $attempt = ExamAttempt::create([
             'exam_id' => $exam->id,
             'user_id' => $request->user()->id,
             'status' => 'graded',
             'score' => 0,
             'total_marks' => $exam->questions->sum('marks'),
-            'started_at' => now(),
+            'started_at' => $attemptStartedAt ?? now(),
             'submitted_at' => now(),
         ]);
 
@@ -114,6 +149,7 @@ class ExamAttemptController extends Controller
         }
 
         $attempt->update(['score' => $score]);
+        $request->session()->forget($this->examSessionKey($exam));
 
         return redirect()->route('exam-attempts.result', $attempt);
     }
@@ -152,9 +188,25 @@ class ExamAttemptController extends Controller
     {
         $user = request()->user();
 
+        if (! $user) {
+            return;
+        }
+
         abort_unless(
             $user->is_admin || (int) $exam->academic_class_id === (int) $user->academic_class_id,
             403
         );
+    }
+
+    private function attemptStartedAt(Request $request, Exam $exam): ?\Illuminate\Support\Carbon
+    {
+        $startedAt = $request->session()->get($this->examSessionKey($exam));
+
+        return $startedAt ? \Illuminate\Support\Carbon::parse($startedAt) : null;
+    }
+
+    private function examSessionKey(Exam $exam): string
+    {
+        return 'exam_started_at.' . $exam->id;
     }
 }

@@ -95,6 +95,7 @@
                             <th>Position</th>
                             <th>Student</th>
                             <th>Score</th>
+                            <th>Gift</th>
                             <th>Submitted</th>
                             <th>Action</th>
                         </tr>
@@ -105,6 +106,7 @@
                                 <td>{{ $attemptPositions[$attempt->id] }}</td>
                                 <td>{{ $attempt->user->name }}</td>
                                 <td>{{ $attempt->score }} / {{ $attempt->total_marks }}</td>
+                                <td>{{ $exam->prizeForPosition($attemptPositions[$attempt->id]) ?: '-' }}</td>
                                 <td>{{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</td>
                                 <td>
                                     @if (auth()->user()->is_admin || (int) auth()->id() === (int) $attempt->user_id)

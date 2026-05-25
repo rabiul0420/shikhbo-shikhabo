@@ -74,6 +74,7 @@
 
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
             </nav>
         </aside>
 
@@ -101,6 +102,9 @@
                                     <th>Class</th>
                                     <th>Subject</th>
                                     <th>Oddhay / Chapter</th>
+                                    <th>Schedule</th>
+                                    <th>Duration</th>
+                                    <th>Offer</th>
                                     <th>Questions</th>
                                     <th>Actions</th>
                                 </tr>
@@ -112,6 +116,26 @@
                                         <td>{{ $exam->academicClass->name }}</td>
                                         <td>{{ $exam->subject->name }}</td>
                                         <td>{{ $exam->chapter->display_name }}</td>
+                                        <td>
+                                            @if ($exam->starts_at && $exam->ends_at)
+                                                <strong>{{ $exam->starts_at->format('M d, Y') }}</strong><br>
+                                                <span class="muted">to {{ $exam->ends_at->format('M d, Y') }}</span>
+                                            @else
+                                                <span class="muted">Not scheduled</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $exam->duration_minutes ? $exam->duration_minutes . ' mins' : '-' }}</td>
+                                        <td>
+                                            @if ($exam->hasPrizes())
+                                                <span class="muted">
+                                                    1st: {{ $exam->first_prize ?: '-' }}<br>
+                                                    2nd: {{ $exam->second_prize ?: '-' }}<br>
+                                                    3rd: {{ $exam->third_prize ?: '-' }}
+                                                </span>
+                                            @else
+                                                <span class="muted">No offer</span>
+                                            @endif
+                                        </td>
                                         <td>{{ $exam->questions_count }}</td>
                                         <td>
                                             <div class="table-actions">
@@ -147,6 +171,30 @@
                         <label>
                             Title
                             <input name="title" value="{{ old('title') }}" placeholder="Write exam title">
+                        </label>
+                        <label>
+                            Start date
+                            <input type="date" name="starts_at" value="{{ old('starts_at') }}">
+                        </label>
+                        <label>
+                            Deadline
+                            <input type="date" name="ends_at" value="{{ old('ends_at') }}">
+                        </label>
+                        <label>
+                            Duration (minutes)
+                            <input type="number" name="duration_minutes" value="{{ old('duration_minutes', 30) }}" min="1" max="1440">
+                        </label>
+                        <label>
+                            1st position gift
+                            <input name="first_prize" value="{{ old('first_prize') }}" placeholder="Example: Trophy + certificate">
+                        </label>
+                        <label>
+                            2nd position gift
+                            <input name="second_prize" value="{{ old('second_prize') }}" placeholder="Example: Medal">
+                        </label>
+                        <label>
+                            3rd position gift
+                            <input name="third_prize" value="{{ old('third_prize') }}" placeholder="Example: Gift box">
                         </label>
                         <label>
                             Class
@@ -215,6 +263,30 @@
                             <label>
                                 Title
                                 <input name="title" value="{{ old('title', $exam->title) }}" placeholder="Write exam title">
+                            </label>
+                            <label>
+                                Start date
+                                <input type="date" name="starts_at" value="{{ old('starts_at', optional($exam->starts_at)->format('Y-m-d')) }}">
+                            </label>
+                            <label>
+                                Deadline
+                                <input type="date" name="ends_at" value="{{ old('ends_at', optional($exam->ends_at)->format('Y-m-d')) }}">
+                            </label>
+                            <label>
+                                Duration (minutes)
+                                <input type="number" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes) }}" min="1" max="1440">
+                            </label>
+                            <label>
+                                1st position gift
+                                <input name="first_prize" value="{{ old('first_prize', $exam->first_prize) }}" placeholder="Example: Trophy + certificate">
+                            </label>
+                            <label>
+                                2nd position gift
+                                <input name="second_prize" value="{{ old('second_prize', $exam->second_prize) }}" placeholder="Example: Medal">
+                            </label>
+                            <label>
+                                3rd position gift
+                                <input name="third_prize" value="{{ old('third_prize', $exam->third_prize) }}" placeholder="Example: Gift box">
                             </label>
                             <label>
                                 Class

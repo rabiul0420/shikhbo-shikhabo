@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AcademicStructureController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminGiftRecipientController;
 use App\Http\Controllers\AdminResultController;
 use App\Http\Controllers\AdminSchoolController;
 use App\Http\Controllers\AdminStudentController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\QuestionController;
 use App\Models\Exam;
+use App\Models\GiftAward;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,7 +24,14 @@ Route::get('/', function () {
         ->latest()
         ->get();
 
-    return view('welcome', compact('exams'));
+    $givenGiftAwards = GiftAward::query()
+        ->with(['attempt.user.academicClass', 'attempt.exam'])
+        ->where('status', 'given')
+        ->latest('given_at')
+        ->take(12)
+        ->get();
+
+    return view('welcome', compact('exams', 'givenGiftAwards'));
 })->name('home');
 
 Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
@@ -38,12 +47,16 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
+Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
+
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.index');
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
+    Route::get('/admin/gift-recipients', [AdminGiftRecipientController::class, 'index'])->name('admin.gift-recipients.index');
+    Route::patch('/admin/gift-recipients/{attempt}/given', [AdminGiftRecipientController::class, 'markGiven'])->name('admin.gift-recipients.given');
     Route::get('/admin/students', [AdminStudentController::class, 'index'])->name('admin.students.index');
     Route::middleware('super_admin')->group(function () {
         Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
@@ -82,7 +95,6 @@ Route::middleware('auth')->group(function () {
     Route::view('/my-profile', 'profile.show')->name('profile.show');
     Route::get('/my-results', [ExamAttemptController::class, 'myResults'])->name('exam-attempts.index');
     Route::get('/exams/{exam}/results', [ExamAttemptController::class, 'allResults'])->name('exams.results');
-    Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
     Route::post('/exams/{exam}/submit', [ExamAttemptController::class, 'submit'])->name('exams.submit');
     Route::get('/exam-attempts/{attempt}', [ExamAttemptController::class, 'result'])->name('exam-attempts.result');
 });

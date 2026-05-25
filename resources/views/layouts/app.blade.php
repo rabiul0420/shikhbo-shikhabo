@@ -238,6 +238,7 @@
                     <a href="{{ route('about-us') }}">About Us</a>
                     <a href="{{ route('contact-us') }}">Contact Us</a>
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    <a href="{{ route('home') }}#gift-winners">Gift Winners</a>
                     @auth
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>
@@ -290,6 +291,7 @@
                     <a href="{{ route('about-us') }}">About Us</a>
                     <a href="{{ route('contact-us') }}">Contact Us</a>
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    <a href="{{ route('home') }}#gift-winners">Gift Winners</a>
                     @auth
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>

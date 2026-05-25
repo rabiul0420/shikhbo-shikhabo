@@ -27,6 +27,7 @@ class ExampleTest extends TestCase
             ->assertSee('About Us')
             ->assertSee('Contact Us')
             ->assertSee('Privacy Policy')
+            ->assertSee('Gift Winners')
             ->assertSee('Login')
             ->assertDontSee('Take Exam')
             ->assertDontSee('My Profile')
@@ -45,6 +46,7 @@ class ExampleTest extends TestCase
             ->assertSee('About Us')
             ->assertSee('Contact Us')
             ->assertSee('Privacy Policy')
+            ->assertSee('Gift Winners')
             ->assertSee('My Profile')
             ->assertSee('My Result')
             ->assertSee('Logout')
@@ -175,6 +177,9 @@ class ExampleTest extends TestCase
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
             'title' => 'Bangla Practice Exam',
+            'first_prize' => 'Trophy',
+            'second_prize' => 'Medal',
+            'third_prize' => 'Gift box',
         ]);
         $ownAttempt = \App\Models\ExamAttempt::create([
             'exam_id' => $exam->id,
@@ -206,6 +211,8 @@ class ExampleTest extends TestCase
             ->assertSee('#1')
             ->assertSee('8 / 10')
             ->assertSee('6 / 10')
+            ->assertSee('Trophy')
+            ->assertSee('Medal')
             ->assertSee(route('exam-attempts.result', $ownAttempt))
             ->assertDontSee(route('exam-attempts.result', $otherAttempt))
             ->assertSee('Details private');
@@ -288,6 +295,279 @@ class ExampleTest extends TestCase
         $this->actingAs($student)
             ->get(route('exams.show', $exam))
             ->assertForbidden();
+    }
+
+    public function test_guest_can_preview_exam_questions_but_cannot_submit_answers(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Public Preview Exam',
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'What is the answer?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+        \App\Models\QuestionOption::create([
+            'question_id' => $question->id,
+            'option_text' => 'Correct option',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->get(route('exams.show', $exam))
+            ->assertOk()
+            ->assertSee('Public Preview Exam')
+            ->assertSee('What is the answer?')
+            ->assertSee('Correct option')
+            ->assertSee('Login to participate')
+            ->assertSee('disabled', false)
+            ->assertDontSee('Submit answers');
+
+        $this->post(route('exams.submit', $exam), [
+            'answers' => [$question->id => [1]],
+        ])->assertRedirect('/login');
+    }
+
+    public function test_home_page_groups_exams_by_schedule_status(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+
+        \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Running Schedule Exam',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addHour(),
+        ]);
+        \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Upcoming Schedule Exam',
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDays(2),
+        ]);
+        \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Expired Schedule Exam',
+            'starts_at' => now()->subDays(2),
+            'ends_at' => now()->subDay(),
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Running Exam')
+            ->assertSee('Upcoming Exam')
+            ->assertSee('Expired Exam')
+            ->assertSeeInOrder([
+                'Running Exam',
+                'Running Schedule Exam',
+                'Upcoming Exam',
+                'Upcoming Schedule Exam',
+                'Expired Exam',
+                'Expired Schedule Exam',
+            ]);
+    }
+
+    public function test_student_cannot_submit_exam_outside_running_schedule(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Future Exam',
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDays(2),
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'What is the answer?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+        $option = \App\Models\QuestionOption::create([
+            'question_id' => $question->id,
+            'option_text' => 'Correct option',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('exams.show', $exam))
+            ->assertNotFound();
+
+        $this->actingAs($student)
+            ->post(route('exams.submit', $exam), [
+                'answers' => [$question->id => [$option->id]],
+            ])
+            ->assertSessionHasErrors('exam');
+
+        $this->assertDatabaseMissing('exam_attempts', [
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+        ]);
+    }
+
+    public function test_student_must_submit_exam_within_duration(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Timed Exam',
+            'starts_at' => today(),
+            'ends_at' => today(),
+            'duration_minutes' => 30,
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'What is the answer?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+        $option = \App\Models\QuestionOption::create([
+            'question_id' => $question->id,
+            'option_text' => 'Correct option',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('exams.show', $exam))
+            ->assertOk()
+            ->assertSee('Finish this exam within 30 minutes')
+            ->assertSessionHas('exam_started_at.' . $exam->id);
+
+        $this->actingAs($student)
+            ->post(route('exams.submit', $exam), [
+                'answers' => [$question->id => [$option->id]],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('exam_attempts', [
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'score' => 1,
+        ]);
+    }
+
+    public function test_student_cannot_submit_after_exam_duration_expires(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Expired Timed Exam',
+            'starts_at' => today(),
+            'ends_at' => today(),
+            'duration_minutes' => 30,
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'What is the answer?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+        $option = \App\Models\QuestionOption::create([
+            'question_id' => $question->id,
+            'option_text' => 'Correct option',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($student)
+            ->withSession(['exam_started_at.' . $exam->id => now()->subMinutes(31)->toIso8601String()])
+            ->post(route('exams.submit', $exam), [
+                'answers' => [$question->id => [$option->id]],
+            ])
+            ->assertSessionHasErrors('exam');
+
+        $this->assertDatabaseMissing('exam_attempts', [
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+        ]);
     }
 
     public function test_student_can_register_with_phone_number_and_school(): void
@@ -1065,6 +1345,161 @@ TEXT;
             ->assertSee('6 / 10')
             ->assertDontSee('Second Student')
             ->assertDontSee('Other Exam');
+    }
+
+    public function test_admin_can_view_and_mark_gift_recipients(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $firstStudent = User::factory()->create([
+            'name' => 'First Gift Student',
+            'phone' => '01711111111',
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $secondStudent = User::factory()->create([
+            'name' => 'Second Gift Student',
+            'phone' => '01811111111',
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Gift Exam',
+            'first_prize' => '50 tk recharge',
+            'second_prize' => '30 tk recharge',
+            'third_prize' => '20 tk recharge',
+        ]);
+        $firstAttempt = \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $firstStudent->id,
+            'status' => 'graded',
+            'score' => 10,
+            'total_marks' => 10,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+        \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $secondStudent->id,
+            'status' => 'graded',
+            'score' => 8,
+            'total_marks' => 10,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.gift-recipients.index'))
+            ->assertOk()
+            ->assertSee('Gift Recipient List')
+            ->assertSee('First Gift Student')
+            ->assertSee('01711111111')
+            ->assertSee('50 tk recharge')
+            ->assertSee('Second Gift Student')
+            ->assertSee('30 tk recharge')
+            ->assertSee('Pending')
+            ->assertSee('Mark given');
+
+        $this->actingAs($admin)
+            ->patch(route('admin.gift-recipients.given', $firstAttempt))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Gift marked as given.');
+
+        $this->assertDatabaseHas('gift_awards', [
+            'exam_attempt_id' => $firstAttempt->id,
+            'position' => 1,
+            'gift_title' => '50 tk recharge',
+            'status' => 'given',
+            'given_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.gift-recipients.index'))
+            ->assertOk()
+            ->assertSee('Given')
+            ->assertSee('Completed');
+    }
+
+    public function test_home_page_shows_only_given_gift_recipients(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $winner = User::factory()->create([
+            'name' => 'Public Gift Winner',
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $pendingWinner = User::factory()->create([
+            'name' => 'Pending Gift Winner',
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Public Gift Exam',
+            'first_prize' => '50 tk recharge',
+            'second_prize' => '30 tk recharge',
+        ]);
+        $givenAttempt = \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $winner->id,
+            'status' => 'graded',
+            'score' => 10,
+            'total_marks' => 10,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+        $pendingAttempt = \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $pendingWinner->id,
+            'status' => 'graded',
+            'score' => 8,
+            'total_marks' => 10,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        \App\Models\GiftAward::create([
+            'exam_attempt_id' => $givenAttempt->id,
+            'position' => 1,
+            'gift_title' => '50 tk recharge',
+            'status' => 'given',
+            'given_at' => now(),
+            'given_by' => $admin->id,
+        ]);
+        \App\Models\GiftAward::create([
+            'exam_attempt_id' => $pendingAttempt->id,
+            'position' => 2,
+            'gift_title' => '30 tk recharge',
+            'status' => 'pending',
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Gift Received Students')
+            ->assertSee('Public Gift Winner')
+            ->assertSee('50 tk recharge')
+            ->assertSee('Public Gift Exam')
+            ->assertDontSee('Pending Gift Winner');
     }
 
     public function test_exam_results_use_dense_positions_after_tied_scores(): void
