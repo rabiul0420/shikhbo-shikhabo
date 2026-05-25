@@ -25,8 +25,10 @@ class User extends Authenticatable
         'email',
         'phone',
         'school_id',
+        'academic_class_id',
         'password',
         'is_admin',
+        'is_super_admin',
     ];
 
     /**
@@ -50,6 +52,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_super_admin' => 'boolean',
         ];
     }
 
@@ -61,5 +64,10 @@ class User extends Authenticatable
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function academicClass(): BelongsTo
+    {
+        return $this->belongsTo(AcademicClass::class);
     }
 }

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Student List'])
+@extends('layouts.app', ['title' => 'Add Admin User'])
 
 @section('content')
     <div class="admin-layout">
@@ -59,68 +59,56 @@
                     </div>
                 </div>
 
-                @if (auth()->user()->is_super_admin)
-                    <div class="admin-menu-group">
-                        <button class="admin-menu-toggle" type="button">
-                            User
-                            <span></span>
-                        </button>
-                        <div class="admin-submenu">
-                            <a class="admin-nav-link" href="{{ route('admin.users.index') }}">User List</a>
-                            <a class="admin-nav-link" href="{{ route('admin.users.create') }}">Add User</a>
-                        </div>
+                <div class="admin-menu-group is-open">
+                    <button class="admin-menu-toggle" type="button">
+                        User
+                        <span></span>
+                    </button>
+                    <div class="admin-submenu">
+                        <a class="admin-nav-link" href="{{ route('admin.users.index') }}">User List</a>
+                        <a class="admin-nav-link is-active" href="{{ route('admin.users.create') }}">Add User</a>
                     </div>
-                @endif
+                </div>
 
-                <a class="admin-nav-link admin-menu-direct is-active" href="{{ route('admin.students.index') }}">Student List</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
             </nav>
         </aside>
 
         <div class="admin-content">
-            <section class="panel">
+            <section class="panel" style="max-width: 680px;">
                 <div class="section-head">
                     <div>
-                        <span class="eyebrow">Students</span>
-                        <h2>Student List</h2>
+                        <span class="eyebrow">User</span>
+                        <h2>Add Admin User</h2>
                     </div>
-                    <span class="count-badge">{{ $students->count() }}</span>
+                    <a class="button secondary" href="{{ route('admin.users.index') }}">User List</a>
                 </div>
 
-                @if ($students->isEmpty())
-                    <p class="muted">No students found yet.</p>
-                @else
-                    <div class="table-wrap">
-                        <table class="admin-data-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Mobile Number</th>
-                                    <th>Class</th>
-                                    <th>School</th>
-                                    <th>Attempts</th>
-                                    <th>Last Submitted</th>
-                                    <th>Joined</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($students as $student)
-                                    <tr>
-                                        <td>{{ $student->name }}</td>
-                                        <td>{{ $student->email }}</td>
-                                        <td>{{ $student->phone ?: '-' }}</td>
-                                        <td>{{ $student->academicClass->name ?? '-' }}</td>
-                                        <td>{{ $student->school->title ?? '-' }}</td>
-                                        <td>{{ $student->exam_attempts_count }}</td>
-                                        <td>{{ $student->exam_attempts_max_submitted_at ? \Illuminate\Support\Carbon::parse($student->exam_attempts_max_submitted_at)->format('M d, Y h:i A') : '-' }}</td>
-                                        <td>{{ optional($student->created_at)->format('M d, Y') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+                <form class="stack" method="POST" action="{{ route('admin.users.store') }}">
+                    @csrf
+                    <label>
+                        Name
+                        <input name="name" value="{{ old('name') }}" autofocus>
+                    </label>
+                    <label>
+                        Email
+                        <input type="email" name="email" value="{{ old('email') }}">
+                    </label>
+                    <label>
+                        Phone Number
+                        <input name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX">
+                    </label>
+                    <label>
+                        Password
+                        <input type="password" name="password">
+                    </label>
+                    <label>
+                        Confirm Password
+                        <input type="password" name="password_confirmation">
+                    </label>
+                    <button type="submit">Add user</button>
+                </form>
             </section>
         </div>
     </div>
@@ -142,7 +130,3 @@
         }
     </script>
 @endpush
-
-
-
-

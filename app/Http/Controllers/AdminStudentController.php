@@ -11,7 +11,7 @@ class AdminStudentController extends Controller
     {
         $students = User::query()
             ->where('is_admin', false)
-            ->with('school')
+            ->with(['academicClass', 'school'])
             ->withCount('examAttempts')
             ->withMax('examAttempts', 'submitted_at')
             ->orderBy('name')

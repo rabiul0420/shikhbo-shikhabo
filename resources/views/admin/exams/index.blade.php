@@ -59,6 +59,19 @@
                     </div>
                 </div>
 
+                @if (auth()->user()->is_super_admin)
+                    <div class="admin-menu-group">
+                        <button class="admin-menu-toggle" type="button">
+                            User
+                            <span></span>
+                        </button>
+                        <div class="admin-submenu">
+                            <a class="admin-nav-link" href="{{ route('admin.users.index') }}">User List</a>
+                            <a class="admin-nav-link" href="{{ route('admin.users.create') }}">Add User</a>
+                        </div>
+                    </div>
+                @endif
+
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
             </nav>

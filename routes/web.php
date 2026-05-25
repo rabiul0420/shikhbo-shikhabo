@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminResultController;
 use App\Http\Controllers\AdminSchoolController;
 use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\QuestionController;
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     $exams = Exam::query()
         ->with(['academicClass', 'subject', 'chapter', 'questions'])
+        ->when(auth()->check() && ! auth()->user()->is_admin, function ($query) {
+            $query->where('academic_class_id', auth()->user()->academic_class_id);
+        })
         ->latest()
         ->get();
 
@@ -41,6 +45,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
     Route::get('/admin/students', [AdminStudentController::class, 'index'])->name('admin.students.index');
+    Route::middleware('super_admin')->group(function () {
+        Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+        Route::get('/admin/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
+        Route::post('/admin/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+    });
     Route::get('/admin/schools', [AdminSchoolController::class, 'index'])->name('admin.schools.index');
     Route::post('/admin/schools', [AdminSchoolController::class, 'store'])->name('admin.schools.store');
     Route::patch('/admin/schools/{school}', [AdminSchoolController::class, 'update'])->name('admin.schools.update');
@@ -61,6 +70,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/admin/chapters/{chapter}', [AcademicStructureController::class, 'destroyChapter'])->name('admin.chapters.destroy');
 
     Route::post('/questions', [QuestionController::class, 'storeStandalone'])->name('questions.standalone.store');
+    Route::post('/questions/bulk', [QuestionController::class, 'storeBulk'])->name('questions.bulk.store');
     Route::patch('/questions/{question}', [QuestionController::class, 'update'])->name('questions.update');
     Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
     Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');

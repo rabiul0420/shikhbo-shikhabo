@@ -25,6 +25,7 @@ class ExamAttemptController extends Controller
     public function allResults(Exam $exam): View
     {
         $exam->load(['academicClass', 'subject', 'chapter']);
+        $this->authorizeExamForUser($exam);
 
         $attempts = ExamAttempt::query()
             ->with('user')
@@ -52,6 +53,7 @@ class ExamAttemptController extends Controller
     public function show(Exam $exam): View
     {
         $exam->load(['academicClass', 'subject', 'chapter', 'questions.options']);
+        $this->authorizeExamForUser($exam);
 
         return view('exams.show', compact('exam'));
     }
@@ -59,6 +61,7 @@ class ExamAttemptController extends Controller
     public function submit(Request $request, Exam $exam): RedirectResponse
     {
         $exam->load('questions.options');
+        $this->authorizeExamForUser($exam);
 
         $attempt = ExamAttempt::create([
             'exam_id' => $exam->id,
@@ -143,5 +146,15 @@ class ExamAttemptController extends Controller
         }
 
         return $positions;
+    }
+
+    private function authorizeExamForUser(Exam $exam): void
+    {
+        $user = request()->user();
+
+        abort_unless(
+            $user->is_admin || (int) $exam->academic_class_id === (int) $user->academic_class_id,
+            403
+        );
     }
 }

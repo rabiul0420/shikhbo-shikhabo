@@ -166,7 +166,17 @@
     <div class="exam-hero">
         <div>
             <h1>Available Exams</h1>
-            <p class="muted">Choose your class, pick an exam, and submit your answers to see the result instantly.</p>
+            <p class="muted">
+                @auth
+                    @if (! auth()->user()->is_admin && auth()->user()->academicClass)
+                        Exams for {{ auth()->user()->academicClass->name }} are shown here.
+                    @else
+                        Choose your class, pick an exam, and submit your answers to see the result instantly.
+                    @endif
+                @else
+                    Choose your class, pick an exam, and submit your answers to see the result instantly.
+                @endauth
+            </p>
         </div>
         <div class="exam-hero-actions">
             @auth
@@ -200,7 +210,17 @@
     @if ($exams->isEmpty())
         <section class="empty-exam-panel">
             <h2>No exams yet</h2>
-            <p class="muted">An admin user can create an exam and add questions to it.</p>
+            <p class="muted">
+                @auth
+                    @if (! auth()->user()->is_admin)
+                        No exam is available for your class yet.
+                    @else
+                        An admin user can create an exam and add questions to it.
+                    @endif
+                @else
+                    An admin user can create an exam and add questions to it.
+                @endauth
+            </p>
             @auth
                 @if (auth()->user()->is_admin)
                     <a class="button" href="{{ route('admin.index') }}">Open admin</a>

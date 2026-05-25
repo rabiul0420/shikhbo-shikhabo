@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
                 'school_id' => $defaultSchoolId,
                 'password' => 'password',
                 'is_admin' => true,
+                'is_super_admin' => true,
             ],
         );
 
@@ -79,6 +80,7 @@ class DatabaseSeeder extends Seeder
                 'school_id' => $defaultSchoolId,
                 'password' => 'password',
                 'is_admin' => false,
+                'is_super_admin' => false,
             ],
         );
     }

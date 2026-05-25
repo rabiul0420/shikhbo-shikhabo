@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicClass;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -36,12 +37,16 @@ class AuthController extends Controller
 
     public function showRegister(): View
     {
+        $classes = AcademicClass::query()
+            ->orderBy('name')
+            ->get();
+
         $schools = School::query()
             ->where('status', 'active')
             ->orderBy('title')
             ->get();
 
-        return view('auth.register', compact('schools'));
+        return view('auth.register', compact('classes', 'schools'));
     }
 
     public function register(Request $request): RedirectResponse
@@ -51,6 +56,7 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:30'],
             'school_name' => ['required', 'string', 'max:255'],
+            'academic_class_id' => ['required', 'exists:academic_classes,id'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -72,6 +78,7 @@ class AuthController extends Controller
             'email' => $data['email'],
             'phone' => $data['phone'],
             'school_id' => $school->id,
+            'academic_class_id' => $data['academic_class_id'],
             'password' => $data['password'],
             'is_admin' => false,
         ]);

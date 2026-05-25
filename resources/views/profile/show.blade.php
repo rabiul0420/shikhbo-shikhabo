@@ -23,6 +23,10 @@
                 <dd>{{ auth()->user()->is_admin ? 'Admin' : 'Student' }}</dd>
             </div>
             <div>
+                <dt>Class</dt>
+                <dd>{{ auth()->user()->academicClass->name ?? '-' }}</dd>
+            </div>
+            <div>
                 <dt>Joined</dt>
                 <dd>{{ optional(auth()->user()->created_at)->format('M d, Y') }}</dd>
             </div>

@@ -55,10 +55,12 @@ class ExampleTest extends TestCase
 
     public function test_profile_page_requires_login_and_shows_account_details(): void
     {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $student = User::factory()->create([
             'name' => 'Student User',
             'email' => 'student@example.com',
             'phone' => '01712345678',
+            'academic_class_id' => $class->id,
             'school_id' => \App\Models\School::create([
                 'title' => 'Student School',
                 'address' => 'Dhaka',
@@ -75,7 +77,8 @@ class ExampleTest extends TestCase
             ->assertSee('My Profile')
             ->assertSee('Student User')
             ->assertSee('student@example.com')
-            ->assertSee('Student');
+            ->assertSee('Student')
+            ->assertSee('Class 5');
     }
 
     public function test_student_can_view_own_results_page(): void
@@ -157,9 +160,9 @@ class ExampleTest extends TestCase
 
     public function test_student_can_view_all_results_for_same_exam(): void
     {
-        $student = User::factory()->create(['name' => 'Current Student', 'is_admin' => false]);
-        $otherStudent = User::factory()->create(['name' => 'Other Student', 'is_admin' => false]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create(['name' => 'Current Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $otherStudent = User::factory()->create(['name' => 'Other Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
             'academic_class_id' => $class->id,
@@ -215,8 +218,81 @@ class ExampleTest extends TestCase
         $this->get('/privacy-policy')->assertOk()->assertSee('Privacy Policy');
     }
 
+    public function test_logged_in_student_sees_only_own_class_exams(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $classFive = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $classSix = \App\Models\AcademicClass::create(['name' => 'Class 6']);
+        $student = User::factory()->create([
+            'academic_class_id' => $classFive->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapterFive = \App\Models\Chapter::create([
+            'academic_class_id' => $classFive->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $chapterSix = \App\Models\Chapter::create([
+            'academic_class_id' => $classSix->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+
+        \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $classFive->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapterFive->id,
+            'title' => 'Class Five Exam',
+        ]);
+        \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $classSix->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapterSix->id,
+            'title' => 'Class Six Exam',
+        ]);
+
+        $this->actingAs($student)
+            ->get('/')
+            ->assertOk()
+            ->assertSee('Class Five Exam')
+            ->assertSee('Exams for Class 5 are shown here.')
+            ->assertDontSee('Class Six Exam');
+    }
+
+    public function test_student_cannot_open_another_class_exam_directly(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $classFive = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $classSix = \App\Models\AcademicClass::create(['name' => 'Class 6']);
+        $student = User::factory()->create([
+            'academic_class_id' => $classFive->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapterSix = \App\Models\Chapter::create([
+            'academic_class_id' => $classSix->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $classSix->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapterSix->id,
+            'title' => 'Class Six Exam',
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('exams.show', $exam))
+            ->assertForbidden();
+    }
+
     public function test_student_can_register_with_phone_number_and_school(): void
     {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $school = \App\Models\School::create([
             'title' => 'Registration School',
             'address' => 'Dhaka',
@@ -226,6 +302,8 @@ class ExampleTest extends TestCase
         $this->get('/register')
             ->assertOk()
             ->assertSee('Phone Number')
+            ->assertSee('Class')
+            ->assertSee('Class 5')
             ->assertSee('School')
             ->assertSee('Registration School');
 
@@ -233,6 +311,7 @@ class ExampleTest extends TestCase
             'name' => 'New Student',
             'email' => 'new-student@example.com',
             'phone' => '01711111111',
+            'academic_class_id' => $class->id,
             'school_name' => 'Registration School',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -246,16 +325,20 @@ class ExampleTest extends TestCase
             'email' => 'new-student@example.com',
             'phone' => '01711111111',
             'school_id' => $school->id,
+            'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
     }
 
     public function test_student_registration_creates_pending_school_when_school_is_not_listed(): void
     {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 6']);
+
         $this->post('/register', [
             'name' => 'Pending School Student',
             'email' => 'pending-school-student@example.com',
             'phone' => '01811111111',
+            'academic_class_id' => $class->id,
             'school_name' => 'New Pending School',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -276,6 +359,7 @@ class ExampleTest extends TestCase
             'email' => 'pending-school-student@example.com',
             'phone' => '01811111111',
             'school_id' => $school->id,
+            'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
     }
@@ -307,8 +391,102 @@ class ExampleTest extends TestCase
             ->assertSee(route('admin.students.index'));
     }
 
+    public function test_super_admin_can_see_user_menu_and_manage_admin_users(): void
+    {
+        $superAdmin = User::factory()->create([
+            'email' => 'super-admin@example.com',
+            'is_admin' => true,
+            'is_super_admin' => true,
+            'name' => 'Super Admin',
+        ]);
+        $admin = User::factory()->create([
+            'email' => 'regular-admin@example.com',
+            'is_admin' => true,
+            'is_super_admin' => false,
+            'name' => 'Regular Admin',
+        ]);
+        $student = User::factory()->create([
+            'email' => 'student-user@example.com',
+            'is_admin' => false,
+            'name' => 'Student User',
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('User')
+            ->assertSee('User List')
+            ->assertSee('Add User')
+            ->assertSee(route('admin.users.index'))
+            ->assertSee(route('admin.users.create'));
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('Admin User List')
+            ->assertSee('Super Admin')
+            ->assertSee('regular-admin@example.com')
+            ->assertDontSee('student-user@example.com');
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.users.create'))
+            ->assertOk()
+            ->assertSee('Add Admin User');
+
+        $this->actingAs($superAdmin)
+            ->post(route('admin.users.store'), [
+                'name' => 'New Admin',
+                'email' => 'new-admin@example.com',
+                'phone' => '01722222222',
+                'password' => 'password',
+                'password_confirmation' => 'password',
+            ])
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('status', 'Admin user added.');
+
+        $this->assertDatabaseHas('users', [
+            'name' => 'New Admin',
+            'email' => 'new-admin@example.com',
+            'phone' => '01722222222',
+            'is_admin' => true,
+            'is_super_admin' => false,
+        ]);
+    }
+
+    public function test_normal_admin_cannot_see_or_access_user_management(): void
+    {
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'is_super_admin' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.index'))
+            ->assertOk()
+            ->assertDontSee(route('admin.users.index'))
+            ->assertDontSee(route('admin.users.create'));
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.create'))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.store'), [
+                'name' => 'Blocked Admin',
+                'email' => 'blocked-admin@example.com',
+                'password' => 'password',
+                'password_confirmation' => 'password',
+            ])
+            ->assertForbidden();
+    }
+
     public function test_admin_can_view_student_list(): void
     {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $admin = User::factory()->create([
             'email' => 'admin@example.com',
             'is_admin' => true,
@@ -318,6 +496,7 @@ class ExampleTest extends TestCase
             'name' => 'Student User',
             'email' => 'student@example.com',
             'phone' => '01712345678',
+            'academic_class_id' => $class->id,
             'school_id' => \App\Models\School::create([
                 'title' => 'Student School',
                 'address' => 'Dhaka',
@@ -325,7 +504,6 @@ class ExampleTest extends TestCase
             ])->id,
             'is_admin' => false,
         ]);
-        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
             'academic_class_id' => $class->id,
@@ -357,6 +535,7 @@ class ExampleTest extends TestCase
             ->assertSee('Student User')
             ->assertSee('student@example.com')
             ->assertSee('01712345678')
+            ->assertSee('Class 5')
             ->assertSee('Student School')
             ->assertSee('>1<', false)
             ->assertDontSee('admin@example.com');
@@ -544,6 +723,123 @@ class ExampleTest extends TestCase
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
             'question_text' => 'What is the correct answer?',
+        ]);
+    }
+
+    public function test_admin_can_bulk_add_questions_from_text_format(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $subject = \App\Models\Subject::create(['name' => 'Physics']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Motion',
+        ]);
+
+        $bulkQuestions = <<<TEXT
+1. কোনো বস্তুর অবস্থান পরিবর্তনের হারকে কী বলে?
+
+A) বল
+B) বেগ
+C) ত্বরণ
+D) কাজ
+
+উত্তর: B) বেগ
+
+2. SI এককে বেগের একক কী?
+
+A) m/s
+B) km/h
+C) m/s²
+D) N
+
+উত্তর: A) m/s
+TEXT;
+
+        $this->actingAs($admin)
+            ->post(route('questions.bulk.store'), [
+                'academic_class_id' => $class->id,
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+                'bulk_questions' => $bulkQuestions,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', '2 questions added.');
+
+        $this->assertDatabaseHas('questions', [
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'কোনো বস্তুর অবস্থান পরিবর্তনের হারকে কী বলে?',
+        ]);
+        $this->assertDatabaseHas('questions', [
+            'question_text' => 'SI এককে বেগের একক কী?',
+            'sort_order' => 2,
+        ]);
+        $this->assertDatabaseHas('question_options', [
+            'option_text' => 'বেগ',
+            'is_correct' => true,
+        ]);
+        $this->assertDatabaseHas('question_options', [
+            'option_text' => 'm/s',
+            'is_correct' => true,
+        ]);
+    }
+
+    public function test_admin_bulk_add_skips_existing_and_repeated_questions(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $subject = \App\Models\Subject::create(['name' => 'Physics']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Motion',
+        ]);
+
+        \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'Existing question?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $bulkQuestions = <<<TEXT
+1. Existing question?
+A) One
+B) Two
+Answer: A
+
+2. New question?
+A) One
+B) Two
+Answer: B
+
+3. New question?
+A) One
+B) Two
+Answer: B
+TEXT;
+
+        $this->actingAs($admin)
+            ->post(route('questions.bulk.store'), [
+                'academic_class_id' => $class->id,
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+                'bulk_questions' => $bulkQuestions,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', '1 questions added. 2 skipped.');
+
+        $this->assertDatabaseCount('questions', 2);
+        $this->assertDatabaseHas('questions', [
+            'question_text' => 'New question?',
+            'sort_order' => 2,
         ]);
     }
 
@@ -773,11 +1069,11 @@ class ExampleTest extends TestCase
 
     public function test_exam_results_use_dense_positions_after_tied_scores(): void
     {
-        $student = User::factory()->create(['name' => 'Current Student', 'is_admin' => false]);
-        $secondStudent = User::factory()->create(['name' => 'Second Student', 'is_admin' => false]);
-        $thirdStudent = User::factory()->create(['name' => 'Third Student', 'is_admin' => false]);
-        $fourthStudent = User::factory()->create(['name' => 'Fourth Student', 'is_admin' => false]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create(['name' => 'Current Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $secondStudent = User::factory()->create(['name' => 'Second Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $thirdStudent = User::factory()->create(['name' => 'Third Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $fourthStudent = User::factory()->create(['name' => 'Fourth Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
             'academic_class_id' => $class->id,
