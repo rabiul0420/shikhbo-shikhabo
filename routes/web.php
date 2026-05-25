@@ -25,7 +25,7 @@ Route::get('/', function () {
         ->get();
 
     $givenGiftAwards = GiftAward::query()
-        ->with(['attempt.user.academicClass', 'attempt.exam'])
+        ->with(['attempt.user.academicClass', 'attempt.user.school', 'attempt.exam'])
         ->where('status', 'given')
         ->latest('given_at')
         ->take(12)
@@ -92,7 +92,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::view('/my-profile', 'profile.show')->name('profile.show');
+    Route::get('/my-profile', [AuthController::class, 'profile'])->name('profile.show');
+    Route::get('/my-profile/edit', [AuthController::class, 'editProfile'])->name('profile.edit');
+    Route::patch('/my-profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::get('/my-results', [ExamAttemptController::class, 'myResults'])->name('exam-attempts.index');
     Route::get('/exams/{exam}/results', [ExamAttemptController::class, 'allResults'])->name('exams.results');
     Route::post('/exams/{exam}/submit', [ExamAttemptController::class, 'submit'])->name('exams.submit');

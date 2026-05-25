@@ -92,7 +92,7 @@
                 </div>
             </div>
 
-            <form class="stack auth-form" method="POST" action="{{ route('register') }}">
+            <form class="stack auth-form" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
                 @csrf
                 <label>
                     Name
@@ -131,6 +131,11 @@
                         @endforeach
                     </datalist>
                     <span id="school-help" class="muted">Search your school. If it is not listed, type the name and it will be added as pending.</span>
+                </label>
+                <label>
+                    Profile Picture
+                    <input type="file" name="profile_photo" accept="image/png,image/jpeg,image/webp">
+                    <span class="muted">Optional. JPG, PNG, or WebP image up to 2 MB.</span>
                 </label>
                 <label>
                     Password

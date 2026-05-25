@@ -106,11 +106,23 @@
         .content-panel { max-width: 860px; }
         .content-panel h2 { margin-top: 18px; }
         .content-panel h2:first-child { margin-top: 0; }
+        .profile-page { display: grid; justify-items: center; gap: 18px; }
+        .profile-page .page-head { width: min(680px, 100%); justify-content: center; text-align: center; }
+        .profile-page .page-head p { margin-bottom: 0; }
+        .profile-card { width: min(680px, 100%); padding: 24px; }
+        .profile-card .row { justify-content: center; }
+        .profile-form { width: min(640px, 100%); margin: 0 auto; }
+        .profile-form label { gap: 8px; }
+        .profile-form-actions { justify-content: center; padding-top: 4px; }
+        .profile-photo-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+        .profile-photo-field input { min-width: 0; }
         .profile-list { display: grid; gap: 10px; margin: 0; }
-        .profile-list div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+        .profile-list div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
         .profile-list div:last-child { border-bottom: 0; }
         .profile-list dt { color: var(--muted); font-weight: 800; }
-        .profile-list dd { margin: 0; }
+        .profile-list dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+        .profile-photo-preview { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; border: 1px solid var(--line); background: #f8f9fa; }
+        .profile-photo-field .profile-photo-preview { width: 58px; height: 58px; }
         .stack { display: grid; gap: 14px; }
         .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .between { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
@@ -206,6 +218,11 @@
             .admin-sidebar { position: static; }
             .admin-menu, .admin-grid, .grid-2 { grid-template-columns: 1fr; }
             .stat-grid, .mini-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .profile-page .page-head { align-items: center; }
+            .profile-card { padding: 18px; }
+            .profile-photo-field { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+            .profile-list div { grid-template-columns: 1fr; gap: 5px; text-align: center; }
+            .profile-list dd { display: flex; justify-content: center; }
             h1 { font-size: 25px; }
         }
 
@@ -235,6 +252,7 @@
                         </form>
                     @endauth
                 @else
+                    <a href="{{ route('home') }}">Home</a>
                     <a href="{{ route('about-us') }}">About Us</a>
                     <a href="{{ route('contact-us') }}">Contact Us</a>
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>

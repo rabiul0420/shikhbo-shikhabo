@@ -293,6 +293,33 @@
             background: rgba(255, 255, 255, .82);
         }
 
+        .gift-winner-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
+        }
+
+        .gift-winner-photo {
+            display: inline-grid;
+            place-items: center;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 1px solid #f1d39b;
+            background: #eef6ff;
+            color: #2f6da8;
+            font-size: 21px;
+            font-weight: 900;
+            overflow: hidden;
+        }
+
+        .gift-winner-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .gift-winner-card h3 {
             margin: 0;
             font-size: 18px;
@@ -308,6 +335,11 @@
         .gift-name {
             color: #9a3412;
             font-weight: 900;
+        }
+
+        .gift-school {
+            margin-bottom: 0;
+            font-size: 14px;
         }
 
         @media (max-width: 760px) {
@@ -524,7 +556,22 @@
                             <span class="pill">{{ $award->position }}{{ $award->position === 1 ? 'st' : ($award->position === 2 ? 'nd' : ($award->position === 3 ? 'rd' : 'th')) }}</span>
                             <span class="pill published">Given</span>
                         </div>
-                        <h3>{{ $award->attempt->user->name }}</h3>
+                        <div class="gift-winner-head">
+                            <span class="gift-winner-photo">
+                                @if ($award->attempt->user->profile_photo_path)
+                                    <img
+                                        src="{{ Storage::url($award->attempt->user->profile_photo_path) }}"
+                                        alt="{{ $award->attempt->user->name }} profile picture"
+                                    >
+                                @else
+                                    {{ \Illuminate\Support\Str::of($award->attempt->user->name)->substr(0, 1)->upper() }}
+                                @endif
+                            </span>
+                            <div>
+                                <h3>{{ $award->attempt->user->name }}</h3>
+                                <p class="muted gift-school">{{ $award->attempt->user->school->title ?? 'School not added' }}</p>
+                            </div>
+                        </div>
                         <p class="muted">
                             {{ $award->attempt->user->academicClass->name ?? '-' }}
                             / {{ $award->attempt->exam->title }}

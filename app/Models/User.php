@@ -26,6 +26,7 @@ class User extends Authenticatable
         'phone',
         'school_id',
         'academic_class_id',
+        'profile_photo_path',
         'password',
         'is_admin',
         'is_super_admin',

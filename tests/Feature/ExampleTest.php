@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -24,6 +26,7 @@ class ExampleTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
+            ->assertSee('Home')
             ->assertSee('About Us')
             ->assertSee('Contact Us')
             ->assertSee('Privacy Policy')
@@ -43,6 +46,7 @@ class ExampleTest extends TestCase
         $this->actingAs($student)
             ->get('/')
             ->assertOk()
+            ->assertSee('Home')
             ->assertSee('About Us')
             ->assertSee('Contact Us')
             ->assertSee('Privacy Policy')
@@ -80,7 +84,88 @@ class ExampleTest extends TestCase
             ->assertSee('Student User')
             ->assertSee('student@example.com')
             ->assertSee('Student')
-            ->assertSee('Class 5');
+            ->assertSee('Class 5')
+            ->assertSee(route('profile.edit'))
+            ->assertSee('Update Profile')
+            ->assertDontSee('Phone Number');
+    }
+
+    public function test_profile_update_button_opens_update_profile_form(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        \App\Models\School::create([
+            'title' => 'Student School',
+            'address' => 'Dhaka',
+            'status' => 'active',
+        ]);
+        $student = User::factory()->create([
+            'name' => 'Student User',
+            'email' => 'student@example.com',
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('Update Profile')
+            ->assertSee('Phone Number')
+            ->assertSee('Profile Picture')
+            ->assertSee('Student School')
+            ->assertSee(route('profile.update'));
+    }
+
+    public function test_logged_in_user_can_update_profile_from_profile_page(): void
+    {
+        Storage::fake('public');
+
+        $oldClass = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $newClass = \App\Models\AcademicClass::create(['name' => 'Class 6']);
+        $oldSchool = \App\Models\School::create([
+            'title' => 'Old School',
+            'address' => 'Dhaka',
+            'status' => 'active',
+        ]);
+        $newSchool = \App\Models\School::create([
+            'title' => 'New School',
+            'address' => 'Dhaka',
+            'status' => 'active',
+        ]);
+        $student = User::factory()->create([
+            'name' => 'Old Name',
+            'email' => 'old-profile@example.com',
+            'phone' => '01700000000',
+            'academic_class_id' => $oldClass->id,
+            'school_id' => $oldSchool->id,
+            'is_admin' => false,
+        ]);
+
+        $profilePhoto = UploadedFile::fake()->createWithContent(
+            'profile.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=')
+        );
+
+        $this->actingAs($student)
+            ->patch('/my-profile', [
+                'name' => 'Updated Name',
+                'email' => 'updated-profile@example.com',
+                'phone' => '01800000000',
+                'academic_class_id' => $newClass->id,
+                'school_name' => 'New School',
+                'profile_photo' => $profilePhoto,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Profile updated.');
+
+        $student->refresh();
+
+        $this->assertSame('Updated Name', $student->name);
+        $this->assertSame('updated-profile@example.com', $student->email);
+        $this->assertSame('01800000000', $student->phone);
+        $this->assertSame($newClass->id, $student->academic_class_id);
+        $this->assertSame($newSchool->id, $student->school_id);
+        $this->assertNotNull($student->profile_photo_path);
+        Storage::disk('public')->assertExists($student->profile_photo_path);
     }
 
     public function test_student_can_view_own_results_page(): void
@@ -642,6 +727,41 @@ class ExampleTest extends TestCase
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
+    }
+
+    public function test_student_can_register_with_profile_picture(): void
+    {
+        Storage::fake('public');
+
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 7']);
+        \App\Models\School::create([
+            'title' => 'Photo School',
+            'address' => 'Dhaka',
+            'status' => 'active',
+        ]);
+
+        $profilePhoto = UploadedFile::fake()->createWithContent(
+            'profile.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=')
+        );
+
+        $this->post('/register', [
+            'name' => 'Photo Student',
+            'email' => 'photo-student@example.com',
+            'phone' => '01911111111',
+            'academic_class_id' => $class->id,
+            'school_name' => 'Photo School',
+            'profile_photo' => $profilePhoto,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('status', 'Account created.');
+
+        $user = User::where('email', 'photo-student@example.com')->firstOrFail();
+
+        $this->assertNotNull($user->profile_photo_path);
+        Storage::disk('public')->assertExists($user->profile_photo_path);
     }
 
     public function test_guest_is_redirected_from_admin_panel(): void
@@ -1402,6 +1522,8 @@ TEXT;
             ->get(route('admin.gift-recipients.index'))
             ->assertOk()
             ->assertSee('Gift Recipient List')
+            ->assertSee('gift-recipients-table')
+            ->assertSee('dataTables.min.js')
             ->assertSee('First Gift Student')
             ->assertSee('01711111111')
             ->assertSee('50 tk recharge')
@@ -1434,9 +1556,16 @@ TEXT;
     {
         $admin = User::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $school = \App\Models\School::create([
+            'title' => 'Public Winner School',
+            'address' => 'Dhaka',
+            'status' => 'active',
+        ]);
         $winner = User::factory()->create([
             'name' => 'Public Gift Winner',
             'academic_class_id' => $class->id,
+            'school_id' => $school->id,
+            'profile_photo_path' => 'profile-photos/winner.jpg',
             'is_admin' => false,
         ]);
         $pendingWinner = User::factory()->create([
@@ -1497,6 +1626,8 @@ TEXT;
             ->assertOk()
             ->assertSee('Gift Received Students')
             ->assertSee('Public Gift Winner')
+            ->assertSee('Public Winner School')
+            ->assertSee('storage/profile-photos/winner.jpg')
             ->assertSee('50 tk recharge')
             ->assertSee('Public Gift Exam')
             ->assertDontSee('Pending Gift Winner');

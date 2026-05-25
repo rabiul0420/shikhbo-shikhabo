@@ -1,5 +1,9 @@
 @extends('layouts.app', ['title' => 'Gift Recipients'])
 
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+@endpush
+
 @section('content')
     <div class="admin-layout">
         <aside class="admin-sidebar">
@@ -57,7 +61,7 @@
                     <p class="muted">No gift recipient found yet.</p>
                 @else
                     <div class="table-wrap">
-                        <table class="admin-data-table">
+                        <table id="gift-recipients-table" class="display admin-data-table">
                             <thead>
                                 <tr>
                                     <th>Status</th>
@@ -118,6 +122,8 @@
 @endsection
 
 @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
     <script>
         if (window.jQuery) {
             $(function () {
@@ -128,6 +134,17 @@
                     $group.toggleClass('is-open');
                     $submenu.stop(true, true).slideToggle(180);
                 });
+
+                if ($.fn.DataTable && $('#gift-recipients-table').length) {
+                    $('#gift-recipients-table').DataTable({
+                        pageLength: 10,
+                        lengthMenu: [5, 10, 25, 50],
+                        order: [[5, 'asc'], [1, 'asc']],
+                        columnDefs: [
+                            { orderable: false, searchable: false, targets: -1 },
+                        ],
+                    });
+                }
             });
         }
     </script>

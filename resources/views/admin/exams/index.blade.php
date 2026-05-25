@@ -1,5 +1,9 @@
 @extends('layouts.app', ['title' => 'Exam'])
 
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+@endpush
+
 @section('content')
     <div class="admin-layout">
         <aside class="admin-sidebar">
@@ -95,7 +99,7 @@
                     <p class="muted">No exams added yet.</p>
                 @else
                     <div class="table-wrap">
-                        <table class="admin-data-table">
+                        <table id="exams-table" class="display admin-data-table">
                             <thead>
                                 <tr>
                                     <th>Title</th>
@@ -345,6 +349,7 @@
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
     <script>
         if (window.jQuery) {
             $(function () {
@@ -355,6 +360,17 @@
                     $group.toggleClass('is-open');
                     $submenu.stop(true, true).slideToggle(180);
                 });
+
+                if ($.fn.DataTable && $('#exams-table').length) {
+                    $('#exams-table').DataTable({
+                        pageLength: 10,
+                        lengthMenu: [5, 10, 25, 50],
+                        order: [[0, 'asc']],
+                        columnDefs: [
+                            { orderable: false, searchable: false, targets: -1 },
+                        ],
+                    });
+                }
 
                 const $class = $('#exam-class');
                 const $subject = $('#exam-subject');
