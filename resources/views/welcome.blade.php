@@ -463,6 +463,11 @@
 
                                 <div class="exam-card-grid">
                                     @foreach ($classExams as $exam)
+                                        @php
+                                            $existingAttempt = auth()->check() && ! auth()->user()->is_admin
+                                                ? $exam->attempts->first()
+                                                : null;
+                                        @endphp
                                         <article class="exam-card">
                                             <div class="exam-card-head">
                                                 <span class="eyebrow">{{ $exam->subject->name }}</span>
@@ -520,7 +525,12 @@
 
                                             <div class="exam-card-actions">
                                                 <span class="pill status-{{ $status }}">{{ ucfirst($status) }}</span>
-                                                @if ($status === 'running' && auth()->check())
+                                                @if ($existingAttempt)
+                                                    <span class="pill status-expired">Already participated</span>
+                                                    <a class="button secondary" href="{{ route('exam-attempts.result', $existingAttempt) }}">View result</a>
+                                                @elseif (! auth()->check())
+                                                    <a class="button" href="{{ route('login') }}">Login to start</a>
+                                                @elseif ($status === 'running')
                                                     <a class="button" href="{{ route('exams.show', $exam) }}">Start exam</a>
                                                 @elseif ($status === 'upcoming')
                                                     <span class="pill status-upcoming">Not started</span>

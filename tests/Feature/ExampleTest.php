@@ -310,6 +310,52 @@ class ExampleTest extends TestCase
         $this->get('/privacy-policy')->assertOk()->assertSee('Privacy Policy');
     }
 
+    public function test_admin_can_create_exam_with_random_question_count(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+
+        $questions = collect(range(1, 3))->map(function ($index) use ($class, $subject, $chapter) {
+            return \App\Models\Question::create([
+                'academic_class_id' => $class->id,
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+                'question_text' => 'Random question ' . $index,
+                'type' => 'single_choice',
+                'marks' => 1,
+                'sort_order' => $index,
+                'is_active' => true,
+            ]);
+        });
+
+        $this->actingAs($admin)
+            ->post(route('exams.store'), [
+                'title' => 'Random Question Exam',
+                'academic_class_id' => $class->id,
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+                'starts_at' => today()->format('Y-m-d'),
+                'ends_at' => today()->format('Y-m-d'),
+                'duration_minutes' => 30,
+                'question_selection_mode' => 'random',
+                'random_question_count' => 2,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Exam added.');
+
+        $exam = \App\Models\Exam::where('title', 'Random Question Exam')->firstOrFail();
+        $attachedQuestionIds = $exam->questions()->pluck('questions.id')->all();
+
+        $this->assertCount(2, $attachedQuestionIds);
+        $this->assertEmpty(array_diff($attachedQuestionIds, $questions->pluck('id')->all()));
+    }
+
     public function test_logged_in_student_sees_only_own_class_exams(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
@@ -354,6 +400,50 @@ class ExampleTest extends TestCase
             ->assertDontSee('Class Six Exam');
     }
 
+    public function test_home_page_replaces_start_exam_for_already_participated_exam(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Already Completed Exam',
+            'starts_at' => today(),
+            'ends_at' => today(),
+            'duration_minutes' => 30,
+        ]);
+        $attempt = \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'status' => 'graded',
+            'score' => 0,
+            'total_marks' => 0,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($student)
+            ->get('/')
+            ->assertOk()
+            ->assertSee('Already Completed Exam')
+            ->assertSee('Already participated')
+            ->assertSee('View result')
+            ->assertSee(route('exam-attempts.result', $attempt))
+            ->assertDontSee('Start exam');
+    }
+
     public function test_student_cannot_open_another_class_exam_directly(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
@@ -382,7 +472,7 @@ class ExampleTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_guest_can_preview_exam_questions_but_cannot_submit_answers(): void
+    public function test_guest_cannot_preview_exam_questions_or_submit_answers(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
@@ -418,13 +508,7 @@ class ExampleTest extends TestCase
         ]);
 
         $this->get(route('exams.show', $exam))
-            ->assertOk()
-            ->assertSee('Public Preview Exam')
-            ->assertSee('What is the answer?')
-            ->assertSee('Correct option')
-            ->assertSee('Login to participate')
-            ->assertSee('disabled', false)
-            ->assertDontSee('Submit answers');
+            ->assertRedirect('/login');
 
         $this->post(route('exams.submit', $exam), [
             'answers' => [$question->id => [1]],
@@ -586,6 +670,10 @@ class ExampleTest extends TestCase
             ->get(route('exams.show', $exam))
             ->assertOk()
             ->assertSee('Finish this exam within 30 minutes')
+            ->assertSee('data-auto-submit="true"', false)
+            ->assertSee('HTMLFormElement.prototype.submit.call(examForm)', false)
+            ->assertSee('name="auto_submitted"', false)
+            ->assertSee('setTimeout(autoSubmitExam', false)
             ->assertSessionHas('exam_started_at.' . $exam->id);
 
         $this->actingAs($student)
@@ -652,6 +740,177 @@ class ExampleTest extends TestCase
         $this->assertDatabaseMissing('exam_attempts', [
             'exam_id' => $exam->id,
             'user_id' => $student->id,
+        ]);
+    }
+
+    public function test_auto_submit_is_accepted_shortly_after_exam_duration_expires(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Auto Submit Timed Exam',
+            'starts_at' => today(),
+            'ends_at' => today(),
+            'duration_minutes' => 30,
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'What is the answer?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+        $option = \App\Models\QuestionOption::create([
+            'question_id' => $question->id,
+            'option_text' => 'Correct option',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($student)
+            ->withSession(['exam_started_at.' . $exam->id => now()->subMinutes(30)->subSeconds(20)->toIso8601String()])
+            ->post(route('exams.submit', $exam), [
+                'auto_submitted' => '1',
+                'answers' => [$question->id => [$option->id]],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('exam_attempts', [
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'score' => 1,
+        ]);
+    }
+
+    public function test_student_can_participate_in_an_exam_only_once(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Single Attempt Exam',
+            'starts_at' => today(),
+            'ends_at' => today(),
+            'duration_minutes' => 30,
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'What is the answer?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+        $option = \App\Models\QuestionOption::create([
+            'question_id' => $question->id,
+            'option_text' => 'Correct option',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+        $attempt = \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'status' => 'graded',
+            'score' => 1,
+            'total_marks' => 1,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('exams.show', $exam))
+            ->assertOk()
+            ->assertSee('You have already participated in this exam')
+            ->assertSee(route('exam-attempts.result', $attempt))
+            ->assertDontSee('Submit answers');
+
+        $this->actingAs($student)
+            ->withSession(['exam_started_at.' . $exam->id => now()->toIso8601String()])
+            ->post(route('exams.submit', $exam), [
+                'answers' => [$question->id => [$option->id]],
+            ])
+            ->assertRedirect(route('exam-attempts.result', $attempt))
+            ->assertSessionHas('status', 'You have already participated in this exam.');
+
+        $this->assertDatabaseCount('exam_attempts', 1);
+    }
+
+    public function test_database_prevents_duplicate_exam_attempts_for_same_student(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Unique Attempt Exam',
+            'starts_at' => today(),
+            'ends_at' => today(),
+            'duration_minutes' => 30,
+        ]);
+
+        \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'status' => 'graded',
+            'score' => 1,
+            'total_marks' => 1,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'status' => 'graded',
+            'score' => 0,
+            'total_marks' => 1,
+            'started_at' => now(),
+            'submitted_at' => now(),
         ]);
     }
 

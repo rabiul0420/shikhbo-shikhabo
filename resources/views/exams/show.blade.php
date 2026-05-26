@@ -86,7 +86,13 @@
         @endif
     @endif
 
-    @if (! $exam->questions->isEmpty() && auth()->check() && $exam->isRunning())
+    @if (! $exam->questions->isEmpty() && $existingAttempt)
+        <section class="panel stack">
+            <h2>You have already participated in this exam</h2>
+            <p class="muted">Each student can participate in an exam one time only.</p>
+            <a class="button" href="{{ route('exam-attempts.result', $existingAttempt) }}">View result</a>
+        </section>
+    @elseif (! $exam->questions->isEmpty() && auth()->check() && $exam->isRunning())
         @if ($exam->duration_minutes && $attemptStartedAt)
             @php
                 $timerDeadline = \Illuminate\Support\Carbon::parse($attemptStartedAt)->addMinutes($exam->duration_minutes);
@@ -101,8 +107,9 @@
             </section>
         @endif
 
-        <form class="stack" method="POST" action="{{ route('exams.submit', $exam) }}">
+        <form id="exam-form" class="stack" method="POST" action="{{ route('exams.submit', $exam) }}" data-auto-submit="true">
             @csrf
+            <input id="auto-submitted" type="hidden" name="auto_submitted" value="0">
             @foreach ($exam->questions as $question)
                 <section class="panel stack">
                     <div class="between">
@@ -163,17 +170,23 @@
 @push('scripts')
     <script>
         const examTimer = document.getElementById('exam-timer');
+        const examForm = document.getElementById('exam-form');
+        const autoSubmittedInput = document.getElementById('auto-submitted');
 
         if (examTimer) {
             const initialRemainingSeconds = Number(examTimer.dataset.remainingSeconds || 0);
             const timerStartedAt = performance.now();
+            let hasAutoSubmitted = false;
+            let timerInterval = null;
+            let autoSubmitTimeout = null;
 
             function updateExamTimer() {
                 const elapsedSeconds = (performance.now() - timerStartedAt) / 1000;
                 const remainingSeconds = Math.max(0, Math.ceil(initialRemainingSeconds - elapsedSeconds));
 
                 if (remainingSeconds <= 0) {
-                    examTimer.textContent = 'Time is over';
+                    examTimer.textContent = 'Time is over. Submitting...';
+                    autoSubmitExam();
                     return;
                 }
 
@@ -182,8 +195,24 @@
                 examTimer.textContent = minutes + ':' + seconds + ' left';
             }
 
+            function autoSubmitExam() {
+                if (! examForm || hasAutoSubmitted) {
+                    return;
+                }
+
+                hasAutoSubmitted = true;
+                clearInterval(timerInterval);
+                clearTimeout(autoSubmitTimeout);
+                if (autoSubmittedInput) {
+                    autoSubmittedInput.value = '1';
+                }
+                examForm.querySelector('button[type="submit"]')?.setAttribute('disabled', 'disabled');
+                HTMLFormElement.prototype.submit.call(examForm);
+            }
+
             updateExamTimer();
-            setInterval(updateExamTimer, 1000);
+            timerInterval = setInterval(updateExamTimer, 1000);
+            autoSubmitTimeout = setTimeout(autoSubmitExam, initialRemainingSeconds * 1000);
         }
     </script>
 @endpush

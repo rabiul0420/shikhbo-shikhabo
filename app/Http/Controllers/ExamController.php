@@ -9,6 +9,8 @@ use App\Models\Question;
 use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -33,6 +35,10 @@ class ExamController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge([
+            'question_selection_mode' => $request->input('question_selection_mode', 'manual'),
+        ]);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
@@ -44,7 +50,9 @@ class ExamController extends Controller
             'first_prize' => ['nullable', 'string', 'max:255'],
             'second_prize' => ['nullable', 'string', 'max:255'],
             'third_prize' => ['nullable', 'string', 'max:255'],
-            'question_ids' => ['required', 'array', 'min:1'],
+            'question_selection_mode' => ['required', Rule::in(['manual', 'random'])],
+            'random_question_count' => ['nullable', 'required_if:question_selection_mode,random', 'integer', 'min:1', 'max:500'],
+            'question_ids' => ['nullable', 'required_if:question_selection_mode,manual', 'array', 'min:1'],
             'question_ids.*' => ['integer', 'exists:questions,id'],
         ]);
 
@@ -62,17 +70,22 @@ class ExamController extends Controller
             ]);
         }
 
-        $questionIds = Question::query()
-            ->whereIn('id', $data['question_ids'])
-            ->where('academic_class_id', $academicClass->id)
-            ->where('subject_id', $subject->id)
-            ->where('chapter_id', $chapter->id)
-            ->pluck('id');
+        if ($data['question_selection_mode'] === 'random') {
+            $questionIds = $this->randomQuestionIds($data, $academicClass, $subject, $chapter);
+        } else {
+            $questionIds = Question::query()
+                ->whereIn('id', $data['question_ids'])
+                ->where('academic_class_id', $academicClass->id)
+                ->where('subject_id', $subject->id)
+                ->where('chapter_id', $chapter->id)
+                ->pluck('id');
 
-        if ($questionIds->count() !== count(array_unique($data['question_ids']))) {
-            throw ValidationException::withMessages([
-                'question_ids' => 'Selected class, subject এবং oddhay / chapter অনুযায়ী question select করুন।',
-            ]);
+            if ($questionIds->count() !== count(array_unique($data['question_ids']))) {
+                throw ValidationException::withMessages([
+                    'question_ids' => 'Selected class, subject এবং oddhay / chapter অনুযায়ী question select করুন।',
+                ]);
+            }
+
         }
 
         $exam = Exam::create([
@@ -103,6 +116,10 @@ class ExamController extends Controller
 
     public function update(Request $request, Exam $exam): RedirectResponse
     {
+        $request->merge([
+            'question_selection_mode' => $request->input('question_selection_mode', 'manual'),
+        ]);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
@@ -114,7 +131,9 @@ class ExamController extends Controller
             'first_prize' => ['nullable', 'string', 'max:255'],
             'second_prize' => ['nullable', 'string', 'max:255'],
             'third_prize' => ['nullable', 'string', 'max:255'],
-            'question_ids' => ['required', 'array', 'min:1'],
+            'question_selection_mode' => ['required', Rule::in(['manual', 'random'])],
+            'random_question_count' => ['nullable', 'required_if:question_selection_mode,random', 'integer', 'min:1', 'max:500'],
+            'question_ids' => ['nullable', 'required_if:question_selection_mode,manual', 'array', 'min:1'],
             'question_ids.*' => ['integer', 'exists:questions,id'],
         ]);
 
@@ -132,17 +151,22 @@ class ExamController extends Controller
             ]);
         }
 
-        $questionIds = Question::query()
-            ->whereIn('id', $data['question_ids'])
-            ->where('academic_class_id', $academicClass->id)
-            ->where('subject_id', $subject->id)
-            ->where('chapter_id', $chapter->id)
-            ->pluck('id');
+        if ($data['question_selection_mode'] === 'random') {
+            $questionIds = $this->randomQuestionIds($data, $academicClass, $subject, $chapter);
+        } else {
+            $questionIds = Question::query()
+                ->whereIn('id', $data['question_ids'])
+                ->where('academic_class_id', $academicClass->id)
+                ->where('subject_id', $subject->id)
+                ->where('chapter_id', $chapter->id)
+                ->pluck('id');
 
-        if ($questionIds->count() !== count(array_unique($data['question_ids']))) {
-            throw ValidationException::withMessages([
-                'question_ids' => 'Selected class, subject এবং oddhay / chapter অনুযায়ী question select করুন।',
-            ]);
+            if ($questionIds->count() !== count(array_unique($data['question_ids']))) {
+                throw ValidationException::withMessages([
+                    'question_ids' => 'Selected class, subject এবং oddhay / chapter অনুযায়ী question select করুন।',
+                ]);
+            }
+
         }
 
         $exam->update([
@@ -161,5 +185,24 @@ class ExamController extends Controller
         $exam->questions()->sync($questionIds);
 
         return back()->with('status', 'Exam updated.');
+    }
+
+    private function randomQuestionIds(array $data, AcademicClass $academicClass, Subject $subject, Chapter $chapter): Collection
+    {
+        $questionIds = Question::query()
+            ->where('academic_class_id', $academicClass->id)
+            ->where('subject_id', $subject->id)
+            ->where('chapter_id', $chapter->id)
+            ->inRandomOrder()
+            ->limit((int) $data['random_question_count'])
+            ->pluck('id');
+
+        if ($questionIds->count() !== (int) $data['random_question_count']) {
+            throw ValidationException::withMessages([
+                'random_question_count' => 'Selected class, subject and oddhay / chapter e eto question available nei.',
+            ]);
+        }
+
+        return $questionIds;
     }
 }

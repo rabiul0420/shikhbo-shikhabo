@@ -225,6 +225,17 @@
                             </select>
                         </label>
                         <label>
+                            Question selection
+                            <select class="js-question-selection-mode" name="question_selection_mode">
+                                <option value="manual" @selected(old('question_selection_mode', 'manual') === 'manual')>Select manually</option>
+                                <option value="random" @selected(old('question_selection_mode') === 'random')>Random questions</option>
+                            </select>
+                        </label>
+                        <label class="js-random-question-count-field">
+                            Random question count
+                            <input class="js-random-question-count" type="number" name="random_question_count" value="{{ old('random_question_count') }}" min="1" max="500">
+                        </label>
+                        <label>
                             Questions
                             <select id="exam-questions" class="js-exam-questions" name="question_ids[]" multiple size="8">
                                 @foreach ($questions as $question)
@@ -315,6 +326,17 @@
                                 <select class="js-exam-chapter" name="chapter_id" data-selected-chapter="{{ old('chapter_id', $exam->chapter_id) }}" disabled>
                                     <option value="">Select class and subject first</option>
                                 </select>
+                            </label>
+                            <label>
+                                Question selection
+                                <select class="js-question-selection-mode" name="question_selection_mode">
+                                    <option value="manual" @selected(old('question_selection_mode', 'manual') === 'manual')>Select manually</option>
+                                    <option value="random" @selected(old('question_selection_mode') === 'random')>Random questions</option>
+                                </select>
+                            </label>
+                            <label class="js-random-question-count-field">
+                                Random question count
+                                <input class="js-random-question-count" type="number" name="random_question_count" value="{{ old('random_question_count', $exam->questions_count) }}" min="1" max="500">
                             </label>
                             <label>
                                 Questions
@@ -459,9 +481,27 @@
                     });
                 }
 
+                function toggleQuestionSelectionMode($form) {
+                    const mode = $form.find('.js-question-selection-mode').val() || 'manual';
+                    const isRandom = mode === 'random';
+                    const $questionsField = $form.find('.js-exam-questions, #exam-questions');
+                    const $randomCountField = $form.find('.js-random-question-count-field');
+                    const $randomCountInput = $form.find('.js-random-question-count');
+
+                    $questionsField.closest('label').toggle(! isRandom);
+                    $questionsField.prop('disabled', isRandom);
+                    $randomCountField.toggle(isRandom);
+                    $randomCountInput.prop('disabled', ! isRandom);
+                }
+
                 $('.js-exam-form, form[action="{{ route('exams.store') }}"]').each(function () {
                     const $form = $(this);
                     loadChapterOptions($form);
+                    toggleQuestionSelectionMode($form);
+                });
+
+                $(document).on('change', '.js-question-selection-mode', function () {
+                    toggleQuestionSelectionMode($(this).closest('form'));
                 });
 
                 $(document).on('change', '.js-exam-class, #exam-class, .js-exam-subject, #exam-subject', function () {

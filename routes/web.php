@@ -16,8 +16,17 @@ use App\Models\GiftAward;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    $examRelations = ['academicClass', 'subject', 'chapter', 'questions'];
+
+    if (auth()->check() && ! auth()->user()->is_admin) {
+        $examRelations['attempts'] = fn ($query) => $query
+            ->where('user_id', auth()->id())
+            ->latest('submitted_at')
+            ->latest();
+    }
+
     $exams = Exam::query()
-        ->with(['academicClass', 'subject', 'chapter', 'questions'])
+        ->with($examRelations)
         ->when(auth()->check() && ! auth()->user()->is_admin, function ($query) {
             $query->where('academic_class_id', auth()->user()->academic_class_id);
         })
@@ -46,8 +55,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
-
-Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.index');
@@ -96,6 +103,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-profile/edit', [AuthController::class, 'editProfile'])->name('profile.edit');
     Route::patch('/my-profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::get('/my-results', [ExamAttemptController::class, 'myResults'])->name('exam-attempts.index');
+    Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
     Route::get('/exams/{exam}/results', [ExamAttemptController::class, 'allResults'])->name('exams.results');
     Route::post('/exams/{exam}/submit', [ExamAttemptController::class, 'submit'])->name('exams.submit');
     Route::get('/exam-attempts/{attempt}', [ExamAttemptController::class, 'result'])->name('exam-attempts.result');
