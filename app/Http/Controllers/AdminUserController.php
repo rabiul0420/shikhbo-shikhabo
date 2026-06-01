@@ -30,14 +30,14 @@ class AdminUserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30', 'unique:users,phone'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
+            'phone' => $data['phone'],
             'password' => $data['password'],
             'is_admin' => true,
             'is_super_admin' => false,

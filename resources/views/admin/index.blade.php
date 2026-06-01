@@ -1,9 +1,5 @@
 @extends('layouts.app', ['title' => 'Admin Dashboard'])
 
-@push('styles')
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
-@endpush
-
 @section('content')
     <div class="admin-layout">
         <aside class="admin-sidebar">
@@ -90,14 +86,27 @@
                         <span class="eyebrow">Question</span>
                         <h2>Question List</h2>
                     </div>
-                    <span class="count-badge">{{ $questions->count() }}</span>
+                    <span class="count-badge">{{ $questions->total() }}</span>
                 </div>
 
+                <form class="question-search-form" method="GET" action="{{ route('admin.index') }}#question-list">
+                    <label>
+                        Search
+                        <input name="question_search" value="{{ $search }}" placeholder="Search question, class, subject, chapter">
+                    </label>
+                    <div class="question-search-actions">
+                        <button type="submit">Search</button>
+                        @if ($search !== '')
+                            <a class="button secondary" href="{{ route('admin.index') }}#question-list">Clear</a>
+                        @endif
+                    </div>
+                </form>
+
                 @if ($questions->isEmpty())
-                    <p class="muted">No questions added yet.</p>
+                    <p class="muted">{{ $search === '' ? 'No questions added yet.' : 'No questions matched your search.' }}</p>
                 @else
                     <div class="table-wrap">
-                        <table id="question-list-table" class="display admin-data-table">
+                        <table class="admin-data-table">
                             <thead>
                                 <tr>
                                     <th>Question</th>
@@ -133,6 +142,23 @@
                             </tbody>
                         </table>
                     </div>
+                    @if ($questions->hasPages())
+                        <nav class="pagination-wrap" aria-label="Question list pagination">
+                            @if ($questions->onFirstPage())
+                                <span class="pagination-button is-disabled">Previous</span>
+                            @else
+                                <a class="pagination-button" href="{{ $questions->previousPageUrl() }}#question-list">Previous</a>
+                            @endif
+
+                            <span class="pagination-status">Page {{ $questions->currentPage() }} of {{ $questions->lastPage() }}</span>
+
+                            @if ($questions->hasMorePages())
+                                <a class="pagination-button" href="{{ $questions->nextPageUrl() }}#question-list">Next</a>
+                            @else
+                                <span class="pagination-button is-disabled">Next</span>
+                            @endif
+                        </nav>
+                    @endif
                 @endif
             </section>
 
@@ -183,9 +209,69 @@
     </div>
 @endsection
 
+@push('styles')
+    <style>
+        .pagination-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 34px;
+            padding: 7px 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .pagination-button:not(.is-disabled):hover {
+            background: #f8f9fa;
+        }
+
+        .pagination-button.is-disabled {
+            color: var(--muted);
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        .pagination-status {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .question-search-form {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) auto;
+            align-items: end;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .question-search-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 760px) {
+            .question-search-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+@endpush
+
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
     <script>
         if (window.jQuery) {
             $(function () {
@@ -201,24 +287,6 @@
                     $('.admin-nav-link').removeClass('is-active');
                     $(this).addClass('is-active');
                 });
-
-                if ($.fn.DataTable && $('#question-list-table').length) {
-                    $('#question-list-table').DataTable({
-                        pageLength: 10,
-                        lengthMenu: [5, 10, 25, 50],
-                        order: [[0, 'asc']],
-                        responsive: true,
-                        columnDefs: [
-                            { orderable: false, searchable: false, targets: -1 },
-                        ],
-                        language: {
-                            search: 'Search:',
-                            lengthMenu: 'Show _MENU_ entries',
-                            info: 'Showing _START_ to _END_ of _TOTAL_ entries',
-                            emptyTable: 'No question data available',
-                        },
-                    });
-                }
 
                 $(document).on('click', '.js-edit-question', function () {
                     const modalId = $(this).data('modal-target');

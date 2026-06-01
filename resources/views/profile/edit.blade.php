@@ -20,13 +20,8 @@
                 </label>
 
                 <label>
-                    Email
-                    <input type="email" name="email" value="{{ old('email', auth()->user()->email) }}" required>
-                </label>
-
-                <label>
-                    Phone Number
-                    <input name="phone" value="{{ old('phone', auth()->user()->phone) }}" placeholder="01XXXXXXXXX">
+                    Mobile Number
+                    <input type="tel" name="phone" value="{{ old('phone', auth()->user()->phone) }}" placeholder="01XXXXXXXXX" required>
                 </label>
 
                 <label>
@@ -64,7 +59,7 @@
                         @if (auth()->user()->profile_photo_path)
                             <img
                                 class="profile-photo-preview"
-                                src="{{ Storage::url(auth()->user()->profile_photo_path) }}"
+                                src="{{ asset(auth()->user()->profile_photo_path) }}"
                                 alt="{{ auth()->user()->name }} profile picture"
                             >
                         @endif

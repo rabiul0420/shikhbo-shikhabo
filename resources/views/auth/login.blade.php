@@ -41,6 +41,7 @@
         }
 
         .auth-form input[type="email"],
+        .auth-form input[type="tel"],
         .auth-form input[type="password"] {
             min-height: 44px;
             border-radius: 6px;
@@ -84,21 +85,35 @@
 @endpush
 
 @section('content')
+    @php
+        $isAdminLogin = ($loginMode ?? 'student') === 'admin';
+    @endphp
+
     <div class="auth-page">
         <section class="panel auth-card">
             <div class="page-head">
                 <div>
-                    <h1>Login</h1>
-                    <p class="muted">Sign in to take exams.</p>
+                    <h1>{{ $isAdminLogin ? 'Admin Login' : 'Login' }}</h1>
+                    <p class="muted">{{ $isAdminLogin ? 'Sign in to manage exams.' : 'Sign in to take exams.' }}</p>
                 </div>
             </div>
 
-            <form class="stack auth-form" method="POST" action="{{ route('login') }}">
+            <form class="stack auth-form" method="POST" action="{{ $isAdminLogin ? route('admin.login') : route('login') }}">
                 @csrf
-                <label>
-                    Email
-                    <input type="email" name="email" value="{{ old('email') }}" autofocus>
-                </label>
+                @if (request('redirect_to'))
+                    <input type="hidden" name="redirect_to" value="{{ request('redirect_to') }}">
+                @endif
+                @if ($isAdminLogin)
+                    <label>
+                        Email
+                        <input type="email" name="email" value="{{ old('email') }}" placeholder="admin@example.com" autofocus>
+                    </label>
+                @else
+                    <label>
+                        Mobile Number
+                        <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX" autofocus>
+                    </label>
+                @endif
                 <label>
                     Password
                     <input type="password" name="password">
@@ -109,7 +124,9 @@
                 </label>
                 <button type="submit">Login</button>
             </form>
-            <p class="muted auth-register-link">No account yet? <a href="{{ route('register') }}"><strong>Create account</strong></a>.</p>
+            @unless ($isAdminLogin)
+                <p class="muted auth-register-link">No account yet? <a href="{{ route('register') }}"><strong>Create account</strong></a>.</p>
+            @endunless
         </section>
     </div>
 @endsection

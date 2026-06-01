@@ -126,7 +126,7 @@
                                 Class
                                 <select name="academic_class_id">
                                     @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}" @selected($chapter->academic_class_id === $class->id)>{{ $class->name }}</option>
+                                        <option value="{{ $class->id }}" @selected((int) $chapter->academic_class_id === (int) $class->id)>{{ $class->name }}</option>
                                     @endforeach
                                 </select>
                             </label>
@@ -134,7 +134,7 @@
                                 Subject
                                 <select name="subject_id">
                                     @foreach ($subjects as $subject)
-                                        <option value="{{ $subject->id }}" @selected($chapter->subject_id === $subject->id)>{{ $subject->name }}</option>
+                                        <option value="{{ $subject->id }}" @selected((int) $chapter->subject_id === (int) $subject->id)>{{ $subject->name }}</option>
                                     @endforeach
                                 </select>
                             </label>

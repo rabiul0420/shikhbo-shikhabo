@@ -1,4 +1,8 @@
-@extends('layouts.app', ['title' => 'Available Exams'])
+@extends('layouts.app', [
+    'title' => 'Online Exam Practice for Students',
+    'description' => 'Practise class-wise, subject-wise, and chapter-wise online exams on Shikhbo Shikhabo. Students can prepare, participate, and check results easily.',
+    'canonical' => route('home'),
+])
 
 @push('styles')
     <style>
@@ -529,11 +533,13 @@
                                                     <span class="pill status-expired">Already participated</span>
                                                     <a class="button secondary" href="{{ route('exam-attempts.result', $existingAttempt) }}">View result</a>
                                                 @elseif (! auth()->check())
-                                                    <a class="button" href="{{ route('login') }}">Login to start</a>
+                                                    <a class="button secondary" href="{{ route('exams.show', $exam) }}">View details</a>
+                                                    <a class="button" href="{{ route('login', ['redirect_to' => route('exams.show', $exam, false)]) }}">Login to start</a>
                                                 @elseif ($status === 'running')
                                                     <a class="button" href="{{ route('exams.show', $exam) }}">Start exam</a>
                                                 @elseif ($status === 'upcoming')
                                                     <span class="pill status-upcoming">Not started</span>
+                                                    <a class="button secondary" href="{{ route('exams.show', $exam) }}">View details</a>
                                                 @else
                                                     <a class="button" href="{{ route('exams.show', $exam) }}">View questions</a>
                                                 @endif
@@ -570,7 +576,7 @@
                             <span class="gift-winner-photo">
                                 @if ($award->attempt->user->profile_photo_path)
                                     <img
-                                        src="{{ Storage::url($award->attempt->user->profile_photo_path) }}"
+                                        src="{{ asset($award->attempt->user->profile_photo_path) }}"
                                         alt="{{ $award->attempt->user->name }} profile picture"
                                     >
                                 @else

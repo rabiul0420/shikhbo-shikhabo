@@ -47,16 +47,69 @@ Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
 Route::view('/about-us', 'pages.about-us')->name('about-us');
 Route::view('/contact-us', 'pages.contact-us')->name('contact-us');
 
+Route::get('/robots.txt', function () {
+    return response(implode("\n", [
+        'User-agent: *',
+        'Disallow: /admin',
+        'Disallow: /login',
+        'Disallow: /register',
+        'Disallow: /my-profile',
+        'Disallow: /my-results',
+        'Disallow: /exam-attempts',
+        '',
+        'Sitemap: ' . route('sitemap'),
+    ]), 200)->header('Content-Type', 'text/plain');
+})->name('robots');
+
+Route::get('/sitemap.xml', function () {
+    $urls = collect([
+        ['loc' => route('home'), 'priority' => '1.0'],
+        ['loc' => route('about-us'), 'priority' => '0.7'],
+        ['loc' => route('contact-us'), 'priority' => '0.7'],
+        ['loc' => route('privacy-policy'), 'priority' => '0.5'],
+    ])->merge(
+        Exam::query()
+            ->withCount('questions')
+            ->whereHas('questions')
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhereDate('ends_at', '>=', today()))
+            ->latest()
+            ->get()
+            ->map(fn (Exam $exam) => [
+                'loc' => route('exams.show', $exam),
+                'priority' => '0.8',
+            ])
+    );
+
+    $items = $urls->map(fn ($url) => implode('', [
+        '    <url>',
+        '<loc>' . e($url['loc']) . '</loc>',
+        '<changefreq>weekly</changefreq>',
+        '<priority>' . e($url['priority']) . '</priority>',
+        '</url>',
+    ]))->implode("\n");
+
+    $xml = implode("\n", [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        $items,
+        '</urlset>',
+    ]);
+
+    return response($xml, 200)->header('Content-Type', 'application/xml');
+})->name('sitemap');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
+    Route::post('/admin/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware('admin')->group(function () {
     Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.index');
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
@@ -65,6 +118,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/gift-recipients', [AdminGiftRecipientController::class, 'index'])->name('admin.gift-recipients.index');
     Route::patch('/admin/gift-recipients/{attempt}/given', [AdminGiftRecipientController::class, 'markGiven'])->name('admin.gift-recipients.given');
     Route::get('/admin/students', [AdminStudentController::class, 'index'])->name('admin.students.index');
+    Route::get('/admin/students/data', [AdminStudentController::class, 'data'])->name('admin.students.data');
+    Route::patch('/admin/students/{student}/password', [AdminStudentController::class, 'updatePassword'])->name('admin.students.password.update');
     Route::middleware('super_admin')->group(function () {
         Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/admin/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
@@ -103,8 +158,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-profile/edit', [AuthController::class, 'editProfile'])->name('profile.edit');
     Route::patch('/my-profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::get('/my-results', [ExamAttemptController::class, 'myResults'])->name('exam-attempts.index');
-    Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
     Route::get('/exams/{exam}/results', [ExamAttemptController::class, 'allResults'])->name('exams.results');
     Route::post('/exams/{exam}/submit', [ExamAttemptController::class, 'submit'])->name('exams.submit');
     Route::get('/exam-attempts/{attempt}', [ExamAttemptController::class, 'result'])->name('exam-attempts.result');
 });
+
+Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');

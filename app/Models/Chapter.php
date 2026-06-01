@@ -14,6 +14,11 @@ class Chapter extends Model
         'name',
     ];
 
+    protected $casts = [
+        'academic_class_id' => 'integer',
+        'subject_id' => 'integer',
+    ];
+
     public function getDisplayNameAttribute(): string
     {
         return filled($this->chapter_no)

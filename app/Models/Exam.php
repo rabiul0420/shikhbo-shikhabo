@@ -28,6 +28,7 @@ class Exam extends Model
         return [
             'starts_at' => 'date',
             'ends_at' => 'date',
+            'duration_minutes' => 'integer',
         ];
     }
 

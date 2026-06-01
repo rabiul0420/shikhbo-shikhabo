@@ -54,14 +54,20 @@ class ExamAttemptController extends Controller
 
     public function show(Exam $exam): View
     {
-        $exam->load(['academicClass', 'subject', 'chapter', 'questions.options']);
+        $exam->load(['academicClass', 'subject', 'chapter']);
         $this->authorizeExamForUser($exam);
 
-        abort_if($exam->scheduleStatus() === 'upcoming', 404);
+        $canViewQuestions = auth()->check() && $exam->scheduleStatus() !== 'upcoming';
+
+        if ($canViewQuestions) {
+            $exam->load('questions.options');
+        }
 
         $attemptStartedAt = null;
         $existingAttempt = null;
         $user = request()->user();
+        $questionCount = $exam->questions()->count();
+        $totalMarks = (int) $exam->questions()->sum('marks');
 
         if ($user && ! $user->is_admin) {
             $existingAttempt = $this->existingAttemptForUser($exam, $user->id);
@@ -77,7 +83,14 @@ class ExamAttemptController extends Controller
             }
         }
 
-        return view('exams.show', compact('exam', 'attemptStartedAt', 'existingAttempt'));
+        return view('exams.show', compact(
+            'exam',
+            'attemptStartedAt',
+            'existingAttempt',
+            'questionCount',
+            'totalMarks',
+            'canViewQuestions'
+        ));
     }
 
     public function submit(Request $request, Exam $exam): RedirectResponse

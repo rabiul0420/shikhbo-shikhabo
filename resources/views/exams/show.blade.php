@@ -1,4 +1,9 @@
-@extends('layouts.app', ['title' => $exam->title])
+@extends('layouts.app', [
+    'title' => $exam->title,
+    'description' => $exam->title . ' exam preview for ' . $exam->academicClass->name . ', ' . $exam->subject->name . ', ' . $exam->chapter->display_name . '. Check exam marks, duration, schedule, and login to participate.',
+    'canonical' => route('exams.show', $exam),
+    'robots' => 'index, follow',
+])
 
 @push('styles')
     <style>
@@ -39,8 +44,8 @@
                 <span class="pill">{{ $exam->academicClass->name }}</span>
                 <span class="pill">{{ $exam->subject->name }}</span>
             <span class="pill">{{ $exam->chapter->display_name }}</span>
-                <span class="pill">{{ $exam->questions->count() }} questions</span>
-                <span class="pill">{{ $exam->questions->sum('marks') }} marks</span>
+                <span class="pill">{{ $questionCount }} questions</span>
+                <span class="pill">{{ $totalMarks }} marks</span>
                 @if ($exam->duration_minutes)
                     <span class="pill">{{ $exam->duration_minutes }} mins</span>
                 @endif
@@ -54,7 +59,7 @@
         <a class="button secondary" href="{{ route('home') }}">Back</a>
     </div>
 
-    @if ($exam->questions->isEmpty())
+    @if ($questionCount === 0)
         <section class="panel">
             <h2>This exam has no questions yet</h2>
         </section>
@@ -86,13 +91,38 @@
         @endif
     @endif
 
-    @if (! $exam->questions->isEmpty() && $existingAttempt)
+    @if (! $canViewQuestions)
+        <section class="panel stack">
+            <h2>Exam preview</h2>
+            <p class="muted">
+                This public preview shows the exam details only. Login is required to see questions, submit answers, and get a result.
+            </p>
+            <div class="grid grid-2">
+                <div class="panel-soft">
+                    <h3>Exam details</h3>
+                    <p class="muted">
+                        {{ $exam->academicClass->name }} / {{ $exam->subject->name }} / {{ $exam->chapter->display_name }}
+                    </p>
+                    <p class="muted">{{ $questionCount }} questions, {{ $totalMarks }} marks{{ $exam->duration_minutes ? ', ' . $exam->duration_minutes . ' minutes' : '' }}.</p>
+                </div>
+                <div class="panel-soft">
+                    <h3>Participation</h3>
+                    @guest
+                        <p class="muted">Create an account or login to participate when this exam is available for your class.</p>
+                        <a class="button" href="{{ route('login', ['redirect_to' => request()->getRequestUri()]) }}">Login to participate</a>
+                    @else
+                        <p class="muted">This exam is {{ $exam->scheduleStatus() }}. Questions are available only after the exam starts.</p>
+                    @endguest
+                </div>
+            </div>
+        </section>
+    @elseif ($questionCount > 0 && $existingAttempt)
         <section class="panel stack">
             <h2>You have already participated in this exam</h2>
             <p class="muted">Each student can participate in an exam one time only.</p>
             <a class="button" href="{{ route('exam-attempts.result', $existingAttempt) }}">View result</a>
         </section>
-    @elseif (! $exam->questions->isEmpty() && auth()->check() && $exam->isRunning())
+    @elseif ($questionCount > 0 && auth()->check() && $exam->isRunning())
         @if ($exam->duration_minutes && $attemptStartedAt)
             @php
                 $timerDeadline = \Illuminate\Support\Carbon::parse($attemptStartedAt)->addMinutes($exam->duration_minutes);
@@ -132,7 +162,7 @@
             @endforeach
             <button type="submit">Submit answers</button>
         </form>
-    @elseif (! $exam->questions->isEmpty())
+    @elseif ($questionCount > 0)
         <div class="stack">
             <section class="panel stack">
                 <h2>Questions preview</h2>

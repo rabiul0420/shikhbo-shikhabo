@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -59,6 +58,52 @@ class ExampleTest extends TestCase
             ->assertDontSee('Register');
     }
 
+    public function test_student_login_uses_mobile_number(): void
+    {
+        $student = User::factory()->create([
+            'email' => 'student-login@example.com',
+            'phone' => '01712345678',
+            'is_admin' => false,
+        ]);
+
+        $this->post(route('login'), [
+            'phone' => '01712345678',
+            'password' => 'password',
+        ])->assertRedirect(route('home'));
+
+        $this->assertAuthenticatedAs($student);
+    }
+
+    public function test_admin_login_uses_email(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'admin-login@example.com',
+            'phone' => '01787654321',
+            'is_admin' => true,
+        ]);
+
+        $this->post(route('admin.login'), [
+            'email' => 'admin-login@example.com',
+            'password' => 'password',
+        ])->assertRedirect(route('admin.index'));
+
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_guest_admin_pages_redirect_to_admin_login(): void
+    {
+        $this->get(route('admin.index'))->assertRedirect(route('admin.login'));
+    }
+
+    public function test_admin_logout_redirects_to_admin_login(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)
+            ->post(route('logout'))
+            ->assertRedirect(route('admin.login'));
+    }
+
     public function test_profile_page_requires_login_and_shows_account_details(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
@@ -82,12 +127,12 @@ class ExampleTest extends TestCase
             ->assertOk()
             ->assertSee('My Profile')
             ->assertSee('Student User')
-            ->assertSee('student@example.com')
+            ->assertSee('01712345678')
             ->assertSee('Student')
             ->assertSee('Class 5')
             ->assertSee(route('profile.edit'))
             ->assertSee('Update Profile')
-            ->assertDontSee('Phone Number');
+            ->assertDontSee('Email');
     }
 
     public function test_profile_update_button_opens_update_profile_form(): void
@@ -109,7 +154,7 @@ class ExampleTest extends TestCase
             ->get(route('profile.edit'))
             ->assertOk()
             ->assertSee('Update Profile')
-            ->assertSee('Phone Number')
+            ->assertSee('Mobile Number')
             ->assertSee('Profile Picture')
             ->assertSee('Student School')
             ->assertSee(route('profile.update'));
@@ -117,8 +162,6 @@ class ExampleTest extends TestCase
 
     public function test_logged_in_user_can_update_profile_from_profile_page(): void
     {
-        Storage::fake('public');
-
         $oldClass = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $newClass = \App\Models\AcademicClass::create(['name' => 'Class 6']);
         $oldSchool = \App\Models\School::create([
@@ -148,7 +191,6 @@ class ExampleTest extends TestCase
         $this->actingAs($student)
             ->patch('/my-profile', [
                 'name' => 'Updated Name',
-                'email' => 'updated-profile@example.com',
                 'phone' => '01800000000',
                 'academic_class_id' => $newClass->id,
                 'school_name' => 'New School',
@@ -160,12 +202,14 @@ class ExampleTest extends TestCase
         $student->refresh();
 
         $this->assertSame('Updated Name', $student->name);
-        $this->assertSame('updated-profile@example.com', $student->email);
+        $this->assertSame('old-profile@example.com', $student->email);
         $this->assertSame('01800000000', $student->phone);
         $this->assertSame($newClass->id, $student->academic_class_id);
         $this->assertSame($newSchool->id, $student->school_id);
         $this->assertNotNull($student->profile_photo_path);
-        Storage::disk('public')->assertExists($student->profile_photo_path);
+        $this->assertStringStartsWith('uploads/profile-photos/', $student->profile_photo_path);
+        $this->assertFileExists(public_path($student->profile_photo_path));
+        @unlink(public_path($student->profile_photo_path));
     }
 
     public function test_student_can_view_own_results_page(): void
@@ -508,11 +552,54 @@ class ExampleTest extends TestCase
         ]);
 
         $this->get(route('exams.show', $exam))
-            ->assertRedirect('/login');
+            ->assertOk()
+            ->assertSee('Exam preview')
+            ->assertSee('Login to participate')
+            ->assertSee('1 questions')
+            ->assertSee('1 marks')
+            ->assertDontSee('What is the answer?')
+            ->assertDontSee('Correct option')
+            ->assertDontSee('Submit answers');
 
         $this->post(route('exams.submit', $exam), [
             'answers' => [$question->id => [1]],
         ])->assertRedirect('/login');
+    }
+
+    public function test_login_can_redirect_back_to_exam_preview(): void
+    {
+        $student = User::factory()->create([
+            'email' => 'preview-student@example.com',
+            'phone' => '01733333333',
+            'password' => bcrypt('password'),
+            'is_admin' => false,
+        ]);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Redirect Preview Exam',
+        ]);
+
+        $this->get(route('login', ['redirect_to' => route('exams.show', $exam, false)]))
+            ->assertOk()
+            ->assertSee('name="redirect_to"', false)
+            ->assertSee(route('exams.show', $exam, false), false);
+
+        $this->post(route('login'), [
+            'phone' => '01733333333',
+            'password' => 'password',
+            'redirect_to' => route('exams.show', $exam, false),
+        ])->assertRedirect(route('exams.show', $exam, false));
     }
 
     public function test_home_page_groups_exams_by_schedule_status(): void
@@ -611,7 +698,10 @@ class ExampleTest extends TestCase
 
         $this->actingAs($student)
             ->get(route('exams.show', $exam))
-            ->assertNotFound();
+            ->assertOk()
+            ->assertSee('Exam preview')
+            ->assertSee('Questions are available only after the exam starts.')
+            ->assertDontSee('Submit answers');
 
         $this->actingAs($student)
             ->post(route('exams.submit', $exam), [
@@ -925,7 +1015,7 @@ class ExampleTest extends TestCase
 
         $this->get('/register')
             ->assertOk()
-            ->assertSee('Phone Number')
+            ->assertSee('Mobile Number')
             ->assertSee('Class')
             ->assertSee('Class 5')
             ->assertSee('School')
@@ -933,7 +1023,6 @@ class ExampleTest extends TestCase
 
         $this->post('/register', [
             'name' => 'New Student',
-            'email' => 'new-student@example.com',
             'phone' => '01711111111',
             'academic_class_id' => $class->id,
             'school_name' => 'Registration School',
@@ -946,7 +1035,6 @@ class ExampleTest extends TestCase
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'name' => 'New Student',
-            'email' => 'new-student@example.com',
             'phone' => '01711111111',
             'school_id' => $school->id,
             'academic_class_id' => $class->id,
@@ -960,7 +1048,6 @@ class ExampleTest extends TestCase
 
         $this->post('/register', [
             'name' => 'Pending School Student',
-            'email' => 'pending-school-student@example.com',
             'phone' => '01811111111',
             'academic_class_id' => $class->id,
             'school_name' => 'New Pending School',
@@ -980,7 +1067,6 @@ class ExampleTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'name' => 'Pending School Student',
-            'email' => 'pending-school-student@example.com',
             'phone' => '01811111111',
             'school_id' => $school->id,
             'academic_class_id' => $class->id,
@@ -990,8 +1076,6 @@ class ExampleTest extends TestCase
 
     public function test_student_can_register_with_profile_picture(): void
     {
-        Storage::fake('public');
-
         $class = \App\Models\AcademicClass::create(['name' => 'Class 7']);
         \App\Models\School::create([
             'title' => 'Photo School',
@@ -1006,7 +1090,6 @@ class ExampleTest extends TestCase
 
         $this->post('/register', [
             'name' => 'Photo Student',
-            'email' => 'photo-student@example.com',
             'phone' => '01911111111',
             'academic_class_id' => $class->id,
             'school_name' => 'Photo School',
@@ -1017,15 +1100,17 @@ class ExampleTest extends TestCase
             ->assertRedirect(route('home'))
             ->assertSessionHas('status', 'Account created.');
 
-        $user = User::where('email', 'photo-student@example.com')->firstOrFail();
+        $user = User::where('phone', '01911111111')->firstOrFail();
 
         $this->assertNotNull($user->profile_photo_path);
-        Storage::disk('public')->assertExists($user->profile_photo_path);
+        $this->assertStringStartsWith('uploads/profile-photos/', $user->profile_photo_path);
+        $this->assertFileExists(public_path($user->profile_photo_path));
+        @unlink(public_path($user->profile_photo_path));
     }
 
     public function test_guest_is_redirected_from_admin_panel(): void
     {
-        $this->get('/admin')->assertRedirect('/login');
+        $this->get('/admin')->assertRedirect(route('admin.login'));
     }
 
     public function test_student_cannot_access_admin_panel(): void
@@ -1191,13 +1276,26 @@ class ExampleTest extends TestCase
             ->get(route('admin.students.index'))
             ->assertOk()
             ->assertSee('Student List')
-            ->assertSee('Student User')
-            ->assertSee('student@example.com')
-            ->assertSee('01712345678')
-            ->assertSee('Class 5')
-            ->assertSee('Student School')
+            ->assertSee('students-table')
+            ->assertSee('admin\/students\/data', false)
+            ->assertSee('Change Password')
             ->assertSee('>1<', false)
             ->assertDontSee('admin@example.com');
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.students.data', [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 10,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('recordsTotal', 1)
+            ->assertJsonPath('recordsFiltered', 1)
+            ->assertJsonFragment(['Student User'])
+            ->assertJsonFragment(['student@example.com'])
+            ->assertJsonFragment(['01712345678'])
+            ->assertJsonFragment(['Class 5'])
+            ->assertJsonFragment(['Student School']);
     }
 
     public function test_student_cannot_access_student_list(): void
@@ -1677,7 +1775,7 @@ TEXT;
         ]);
         \App\Models\ExamAttempt::create([
             'exam_id' => $selectedExam->id,
-            'user_id' => $firstStudent->id,
+            'user_id' => $secondStudent->id,
             'status' => 'graded',
             'score' => 7,
             'total_marks' => 10,
@@ -1718,11 +1816,11 @@ TEXT;
             ->assertDontSee('Top Position')
             ->assertSee('Position')
             ->assertSee('First Student')
+            ->assertSee('Second Student')
             ->assertSee('Third Student')
             ->assertSee('8 / 10')
             ->assertSee('7 / 10')
             ->assertSee('6 / 10')
-            ->assertDontSee('Second Student')
             ->assertDontSee('Other Exam');
     }
 
@@ -1824,7 +1922,7 @@ TEXT;
             'name' => 'Public Gift Winner',
             'academic_class_id' => $class->id,
             'school_id' => $school->id,
-            'profile_photo_path' => 'profile-photos/winner.jpg',
+            'profile_photo_path' => 'uploads/profile-photos/winner.jpg',
             'is_admin' => false,
         ]);
         $pendingWinner = User::factory()->create([
@@ -1886,7 +1984,7 @@ TEXT;
             ->assertSee('Gift Received Students')
             ->assertSee('Public Gift Winner')
             ->assertSee('Public Winner School')
-            ->assertSee('storage/profile-photos/winner.jpg')
+            ->assertSee('uploads/profile-photos/winner.jpg')
             ->assertSee('50 tk recharge')
             ->assertSee('Public Gift Exam')
             ->assertDontSee('Pending Gift Winner');

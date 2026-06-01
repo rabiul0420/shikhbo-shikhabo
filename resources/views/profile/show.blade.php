@@ -17,7 +17,7 @@
                         @if (auth()->user()->profile_photo_path)
                             <img
                                 class="profile-photo-preview"
-                                src="{{ Storage::url(auth()->user()->profile_photo_path) }}"
+                                src="{{ asset(auth()->user()->profile_photo_path) }}"
                                 alt="{{ auth()->user()->name }} profile picture"
                             >
                         @else
@@ -30,11 +30,7 @@
                     <dd>{{ auth()->user()->name }}</dd>
                 </div>
                 <div>
-                    <dt>Email</dt>
-                    <dd>{{ auth()->user()->email }}</dd>
-                </div>
-                <div>
-                    <dt>Phone</dt>
+                    <dt>Mobile</dt>
                     <dd>{{ auth()->user()->phone ?? '-' }}</dd>
                 </div>
                 <div>

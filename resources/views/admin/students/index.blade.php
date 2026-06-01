@@ -1,5 +1,9 @@
 @extends('layouts.app', ['title' => 'Student List'])
 
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+@endpush
+
 @section('content')
     <div class="admin-layout">
         <aside class="admin-sidebar">
@@ -85,14 +89,18 @@
                         <span class="eyebrow">Students</span>
                         <h2>Student List</h2>
                     </div>
-                    <span class="count-badge">{{ $students->count() }}</span>
+                    <span class="count-badge">{{ $studentCount }}</span>
                 </div>
 
-                @if ($students->isEmpty())
+                @if (session('status'))
+                    <p class="muted">{{ session('status') }}</p>
+                @endif
+
+                @if ($studentCount === 0)
                     <p class="muted">No students found yet.</p>
                 @else
                     <div class="table-wrap">
-                        <table class="admin-data-table">
+                        <table id="students-table" class="display admin-data-table">
                             <thead>
                                 <tr>
                                     <th>Name</th>
@@ -103,23 +111,48 @@
                                     <th>Attempts</th>
                                     <th>Last Submitted</th>
                                     <th>Joined</th>
+                                    <th>Password</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach ($students as $student)
-                                    <tr>
-                                        <td>{{ $student->name }}</td>
-                                        <td>{{ $student->email }}</td>
-                                        <td>{{ $student->phone ?: '-' }}</td>
-                                        <td>{{ $student->academicClass->name ?? '-' }}</td>
-                                        <td>{{ $student->school->title ?? '-' }}</td>
-                                        <td>{{ $student->exam_attempts_count }}</td>
-                                        <td>{{ $student->exam_attempts_max_submitted_at ? \Illuminate\Support\Carbon::parse($student->exam_attempts_max_submitted_at)->format('M d, Y h:i A') : '-' }}</td>
-                                        <td>{{ optional($student->created_at)->format('M d, Y') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
+                            <tbody></tbody>
                         </table>
+                    </div>
+
+                    <div class="modal-backdrop {{ $errors->studentPassword->any() ? 'is-open' : '' }}" id="change-password-modal" aria-hidden="{{ $errors->studentPassword->any() ? 'false' : 'true' }}">
+                        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+                            <div class="modal-head">
+                                <div>
+                                    <span class="eyebrow">Student Password</span>
+                                    <h3 id="change-password-title">Change Password</h3>
+                                    <p class="muted" id="change-password-student">
+                                        @if (old('password_student_name'))
+                                            {{ old('password_student_name') }} - {{ old('password_student_contact') }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <button class="button secondary small js-close-modal" type="button" data-modal-close="change-password-modal">Close</button>
+                            </div>
+
+                            <form class="stack" id="change-password-form" method="POST" action="{{ old('password_action', route('admin.students.index')) }}">
+                                @csrf
+                                @method('PATCH')
+                                <label>
+                                    New Password
+                                    <input type="password" name="password" minlength="8" required autofocus>
+                                </label>
+                                <label>
+                                    Confirm Password
+                                    <input type="password" name="password_confirmation" minlength="8" required>
+                                </label>
+                                @if ($errors->studentPassword->any())
+                                    <p class="muted">{{ $errors->studentPassword->first('password') }}</p>
+                                @endif
+                                <div class="modal-actions">
+                                    <button class="button secondary js-close-modal" type="button" data-modal-close="change-password-modal">Cancel</button>
+                                    <button type="submit">Change Password</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 @endif
             </section>
@@ -129,6 +162,7 @@
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
     <script>
         if (window.jQuery) {
             $(function () {
@@ -139,6 +173,56 @@
                     $group.toggleClass('is-open');
                     $submenu.stop(true, true).slideToggle(180);
                 });
+
+                if ($.fn.DataTable && $('#students-table').length) {
+                    $('#students-table').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        ajax: @json(route('admin.students.data')),
+                        pageLength: 10,
+                        order: [[0, 'asc']],
+                        columnDefs: [
+                            { orderable: false, searchable: false, targets: -1 },
+                        ],
+                    });
+                }
+
+                $(document).on('click', '.js-change-password', function () {
+                    const $button = $(this);
+                    const modalId = 'change-password-modal';
+                    const $modal = $('#' + modalId);
+
+                    $('#change-password-form').attr('action', $button.data('action'));
+                    $('#change-password-student').text($button.data('student-name') + ' - ' + $button.data('student-contact'));
+                    $modal.addClass('is-open').attr('aria-hidden', 'false');
+                    $('body').addClass('modal-open');
+                    $modal.find('input, textarea, select, button').filter(':visible').first().trigger('focus');
+                });
+
+                $(document).on('click', '.js-close-modal', function () {
+                    const modalId = $(this).data('modal-close');
+
+                    $('#' + modalId).removeClass('is-open').attr('aria-hidden', 'true');
+                    $('body').removeClass('modal-open');
+                });
+
+                $(document).on('click', '.modal-backdrop', function (event) {
+                    if (event.target === this) {
+                        $(this).removeClass('is-open').attr('aria-hidden', 'true');
+                        $('body').removeClass('modal-open');
+                    }
+                });
+
+                $(document).on('keydown', function (event) {
+                    if (event.key === 'Escape') {
+                        $('.modal-backdrop.is-open').removeClass('is-open').attr('aria-hidden', 'true');
+                        $('body').removeClass('modal-open');
+                    }
+                });
+
+                if ($('.modal-backdrop.is-open').length) {
+                    $('body').addClass('modal-open');
+                }
             });
         }
     </script>

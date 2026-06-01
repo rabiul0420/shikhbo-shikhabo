@@ -97,8 +97,8 @@
                         <input type="email" name="email" value="{{ old('email') }}">
                     </label>
                     <label>
-                        Phone Number
-                        <input name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX">
+                        Mobile Number
+                        <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX" required>
                     </label>
                     <label>
                         Password

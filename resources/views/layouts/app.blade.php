@@ -1,9 +1,72 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+    @php
+        $siteName = 'Shikhbo Shikhabo';
+        $defaultDescription = 'Shikhbo Shikhabo helps students practise class-wise, subject-wise, and chapter-wise online exams with quick results.';
+        $seoTitle = $title ?? $siteName;
+        $fullTitle = str_contains($seoTitle, $siteName) ? $seoTitle : $seoTitle . ' | ' . $siteName;
+        $seoDescription = $description ?? $defaultDescription;
+        $privateRoute = request()->routeIs([
+            'admin.*',
+            'login',
+            'register',
+            'profile.*',
+            'exam-attempts.*',
+            'exams.*',
+        ]);
+        $seoRobots = $robots ?? ($privateRoute ? 'noindex, nofollow' : 'index, follow');
+        $seoCanonical = $canonical ?? url()->current();
+        $seoImage = $image ?? asset('logo.svg');
+        $schemaGraph = [
+            [
+                '@type' => 'Organization',
+                '@id' => url('/') . '#organization',
+                'name' => $siteName,
+                'url' => url('/'),
+                'logo' => asset('logo.svg'),
+            ],
+            [
+                '@type' => 'WebSite',
+                '@id' => url('/') . '#website',
+                'name' => $siteName,
+                'url' => url('/'),
+                'publisher' => ['@id' => url('/') . '#organization'],
+            ],
+        ];
+    @endphp
+    @unless (request()->routeIs('admin.*'))
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-5YFNREHDDF"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-5YFNREHDDF');
+        </script>
+    @endunless
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Shikhbo Shikhabo' }}</title>
+    <title>{{ $fullTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    <meta name="robots" content="{{ $seoRobots }}">
+    <link rel="canonical" href="{{ $seoCanonical }}">
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $fullTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:url" content="{{ $seoCanonical }}">
+    <meta property="og:image" content="{{ $seoImage }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ $fullTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    <meta name="twitter:image" content="{{ $seoImage }}">
+    @if ($seoRobots === 'index, follow')
+        <script type="application/ld+json">
+            {!! json_encode(['@context' => 'https://schema.org', '@graph' => $schemaGraph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+        </script>
+    @endif
     <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
     @stack('styles')
     <style>
