@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Models\ExamAttempt;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ExamAttemptController extends Controller
@@ -52,10 +54,43 @@ class ExamAttemptController extends Controller
 
     public function show(Exam $exam): View
     {
-        $exam->load(['academicClass', 'subject', 'chapter', 'questions.options']);
+        $exam->load(['academicClass', 'subject', 'chapter']);
         $this->authorizeExamForUser($exam);
 
-        return view('exams.show', compact('exam'));
+        $canViewQuestions = auth()->check() && $exam->scheduleStatus() !== 'upcoming';
+
+        if ($canViewQuestions) {
+            $exam->load('questions.options');
+        }
+
+        $attemptStartedAt = null;
+        $existingAttempt = null;
+        $user = request()->user();
+        $questionCount = $exam->questions()->count();
+        $totalMarks = (int) $exam->questions()->sum('marks');
+
+        if ($user && ! $user->is_admin) {
+            $existingAttempt = $this->existingAttemptForUser($exam, $user->id);
+        }
+
+        if ($user && ! $existingAttempt && $exam->isRunning() && $exam->duration_minutes) {
+            $sessionKey = $this->examSessionKey($exam);
+            $attemptStartedAt = request()->session()->get($sessionKey);
+
+            if (! $attemptStartedAt) {
+                $attemptStartedAt = now()->toIso8601String();
+                request()->session()->put($sessionKey, $attemptStartedAt);
+            }
+        }
+
+        return view('exams.show', compact(
+            'exam',
+            'attemptStartedAt',
+            'existingAttempt',
+            'questionCount',
+            'totalMarks',
+            'canViewQuestions'
+        ));
     }
 
     public function submit(Request $request, Exam $exam): RedirectResponse
@@ -63,15 +98,57 @@ class ExamAttemptController extends Controller
         $exam->load('questions.options');
         $this->authorizeExamForUser($exam);
 
-        $attempt = ExamAttempt::create([
-            'exam_id' => $exam->id,
-            'user_id' => $request->user()->id,
-            'status' => 'graded',
-            'score' => 0,
-            'total_marks' => $exam->questions->sum('marks'),
-            'started_at' => now(),
-            'submitted_at' => now(),
-        ]);
+        if (! $exam->isRunning()) {
+            throw ValidationException::withMessages([
+                'exam' => 'This exam is not running now.',
+            ]);
+        }
+
+        if (! $request->user()->is_admin && $existingAttempt = $this->existingAttemptForUser($exam, $request->user()->id)) {
+            $request->session()->forget($this->examSessionKey($exam));
+
+            return redirect()
+                ->route('exam-attempts.result', $existingAttempt)
+                ->with('status', 'You have already participated in this exam.');
+        }
+
+        $attemptStartedAt = $this->attemptStartedAt($request, $exam);
+
+        if ($exam->duration_minutes && ! $attemptStartedAt) {
+            throw ValidationException::withMessages([
+                'exam' => 'Please open the exam page before submitting answers.',
+            ]);
+        }
+
+        $submissionGraceSeconds = $request->boolean('auto_submitted') ? 120 : 5;
+
+        if ($exam->duration_minutes && $attemptStartedAt->copy()->addMinutes($exam->duration_minutes)->addSeconds($submissionGraceSeconds)->isPast()) {
+            throw ValidationException::withMessages([
+                'exam' => 'The exam time is over.',
+            ]);
+        }
+
+        try {
+            $attempt = ExamAttempt::create([
+                'exam_id' => $exam->id,
+                'user_id' => $request->user()->id,
+                'status' => 'graded',
+                'score' => 0,
+                'total_marks' => $exam->questions->sum('marks'),
+                'started_at' => $attemptStartedAt ?? now(),
+                'submitted_at' => now(),
+            ]);
+        } catch (QueryException $exception) {
+            if (! $request->user()->is_admin && $existingAttempt = $this->existingAttemptForUser($exam, $request->user()->id)) {
+                $request->session()->forget($this->examSessionKey($exam));
+
+                return redirect()
+                    ->route('exam-attempts.result', $existingAttempt)
+                    ->with('status', 'You have already participated in this exam.');
+            }
+
+            throw $exception;
+        }
 
         $score = 0;
         $submittedAnswers = $request->input('answers', []);
@@ -114,6 +191,7 @@ class ExamAttemptController extends Controller
         }
 
         $attempt->update(['score' => $score]);
+        $request->session()->forget($this->examSessionKey($exam));
 
         return redirect()->route('exam-attempts.result', $attempt);
     }
@@ -152,9 +230,35 @@ class ExamAttemptController extends Controller
     {
         $user = request()->user();
 
+        if (! $user) {
+            return;
+        }
+
         abort_unless(
             $user->is_admin || (int) $exam->academic_class_id === (int) $user->academic_class_id,
             403
         );
+    }
+
+    private function attemptStartedAt(Request $request, Exam $exam): ?\Illuminate\Support\Carbon
+    {
+        $startedAt = $request->session()->get($this->examSessionKey($exam));
+
+        return $startedAt ? \Illuminate\Support\Carbon::parse($startedAt) : null;
+    }
+
+    private function existingAttemptForUser(Exam $exam, int $userId): ?ExamAttempt
+    {
+        return ExamAttempt::query()
+            ->where('exam_id', $exam->id)
+            ->where('user_id', $userId)
+            ->latest('submitted_at')
+            ->latest()
+            ->first();
+    }
+
+    private function examSessionKey(Exam $exam): string
+    {
+        return 'exam_started_at.' . $exam->id;
     }
 }

@@ -1,4 +1,8 @@
-@extends('layouts.app', ['title' => 'Privacy Policy'])
+@extends('layouts.app', [
+    'title' => 'Privacy Policy',
+    'description' => 'Read how Shikhbo Shikhabo handles student account information, exam attempts, answers, scores, and learning records.',
+    'canonical' => route('privacy-policy'),
+])
 
 @section('content')
     <div class="page-head">

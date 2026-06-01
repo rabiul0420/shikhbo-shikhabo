@@ -92,19 +92,15 @@
                 </div>
             </div>
 
-            <form class="stack auth-form" method="POST" action="{{ route('register') }}">
+            <form class="stack auth-form" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
                 @csrf
                 <label>
                     Name
                     <input name="name" value="{{ old('name') }}" autofocus>
                 </label>
                 <label>
-                    Email
-                    <input type="email" name="email" value="{{ old('email') }}">
-                </label>
-                <label>
-                    Phone Number
-                    <input name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX">
+                    Mobile Number
+                    <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX" required>
                 </label>
                 <label>
                     Class
@@ -131,6 +127,11 @@
                         @endforeach
                     </datalist>
                     <span id="school-help" class="muted">Search your school. If it is not listed, type the name and it will be added as pending.</span>
+                </label>
+                <label>
+                    Profile Picture
+                    <input type="file" name="profile_photo" accept="image/png,image/jpeg,image/webp">
+                    <span class="muted">Optional. JPG, PNG, or WebP image up to 2 MB.</span>
                 </label>
                 <label>
                     Password

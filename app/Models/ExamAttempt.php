@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamAttempt extends Model
 {
@@ -39,5 +40,10 @@ class ExamAttempt extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(ExamAttemptAnswer::class);
+    }
+
+    public function giftAward(): HasOne
+    {
+        return $this->hasOne(GiftAward::class);
     }
 }

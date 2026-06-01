@@ -1,4 +1,8 @@
-@extends('layouts.app', ['title' => 'About Us'])
+@extends('layouts.app', [
+    'title' => 'About Shikhbo Shikhabo',
+    'description' => 'Learn about Shikhbo Shikhabo, an online learning and exam practice platform for students, teachers, coaching centers, and admins.',
+    'canonical' => route('about-us'),
+])
 
 @section('content')
     <div class="page-head">
