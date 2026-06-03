@@ -1,4 +1,8 @@
-@extends('layouts.app', ['title' => 'Contact Us'])
+@extends('layouts.app', [
+    'title' => 'Contact Shikhbo Shikhabo',
+    'description' => 'Contact Shikhbo Shikhabo for student exam support, account help, admin assistance, and online exam platform setup questions.',
+    'canonical' => route('contact-us'),
+])
 
 @push('styles')
     <style>

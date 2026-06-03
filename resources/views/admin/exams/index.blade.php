@@ -1,5 +1,9 @@
 @extends('layouts.app', ['title' => 'Exam'])
 
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+@endpush
+
 @section('content')
     <div class="admin-layout">
         <aside class="admin-sidebar">
@@ -74,6 +78,7 @@
 
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
             </nav>
         </aside>
 
@@ -94,13 +99,16 @@
                     <p class="muted">No exams added yet.</p>
                 @else
                     <div class="table-wrap">
-                        <table class="admin-data-table">
+                        <table id="exams-table" class="display admin-data-table">
                             <thead>
                                 <tr>
                                     <th>Title</th>
                                     <th>Class</th>
                                     <th>Subject</th>
                                     <th>Oddhay / Chapter</th>
+                                    <th>Schedule</th>
+                                    <th>Duration</th>
+                                    <th>Offer</th>
                                     <th>Questions</th>
                                     <th>Actions</th>
                                 </tr>
@@ -112,6 +120,26 @@
                                         <td>{{ $exam->academicClass->name }}</td>
                                         <td>{{ $exam->subject->name }}</td>
                                         <td>{{ $exam->chapter->display_name }}</td>
+                                        <td>
+                                            @if ($exam->starts_at && $exam->ends_at)
+                                                <strong>{{ $exam->starts_at->format('M d, Y') }}</strong><br>
+                                                <span class="muted">to {{ $exam->ends_at->format('M d, Y') }}</span>
+                                            @else
+                                                <span class="muted">Not scheduled</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $exam->duration_minutes ? $exam->duration_minutes . ' mins' : '-' }}</td>
+                                        <td>
+                                            @if ($exam->hasPrizes())
+                                                <span class="muted">
+                                                    1st: {{ $exam->first_prize ?: '-' }}<br>
+                                                    2nd: {{ $exam->second_prize ?: '-' }}<br>
+                                                    3rd: {{ $exam->third_prize ?: '-' }}
+                                                </span>
+                                            @else
+                                                <span class="muted">No offer</span>
+                                            @endif
+                                        </td>
                                         <td>{{ $exam->questions_count }}</td>
                                         <td>
                                             <div class="table-actions">
@@ -149,6 +177,30 @@
                             <input name="title" value="{{ old('title') }}" placeholder="Write exam title">
                         </label>
                         <label>
+                            Start date
+                            <input type="date" name="starts_at" value="{{ old('starts_at') }}">
+                        </label>
+                        <label>
+                            Deadline
+                            <input type="date" name="ends_at" value="{{ old('ends_at') }}">
+                        </label>
+                        <label>
+                            Duration (minutes)
+                            <input type="number" name="duration_minutes" value="{{ old('duration_minutes', 30) }}" min="1" max="1440">
+                        </label>
+                        <label>
+                            1st position gift
+                            <input name="first_prize" value="{{ old('first_prize') }}" placeholder="Example: Trophy + certificate">
+                        </label>
+                        <label>
+                            2nd position gift
+                            <input name="second_prize" value="{{ old('second_prize') }}" placeholder="Example: Medal">
+                        </label>
+                        <label>
+                            3rd position gift
+                            <input name="third_prize" value="{{ old('third_prize') }}" placeholder="Example: Gift box">
+                        </label>
+                        <label>
                             Class
                             <select id="exam-class" class="js-exam-class" name="academic_class_id">
                                 <option value="">Select class</option>
@@ -171,6 +223,17 @@
                             <select id="exam-chapter" class="js-exam-chapter" name="chapter_id" data-selected-chapter="{{ old('chapter_id') }}" disabled>
                                 <option value="">Select class and subject first</option>
                             </select>
+                        </label>
+                        <label>
+                            Question selection
+                            <select class="js-question-selection-mode" name="question_selection_mode">
+                                <option value="manual" @selected(old('question_selection_mode', 'manual') === 'manual')>Select manually</option>
+                                <option value="random" @selected(old('question_selection_mode') === 'random')>Random questions</option>
+                            </select>
+                        </label>
+                        <label class="js-random-question-count-field">
+                            Random question count
+                            <input class="js-random-question-count" type="number" name="random_question_count" value="{{ old('random_question_count') }}" min="1" max="500">
                         </label>
                         <label>
                             Questions
@@ -217,6 +280,30 @@
                                 <input name="title" value="{{ old('title', $exam->title) }}" placeholder="Write exam title">
                             </label>
                             <label>
+                                Start date
+                                <input type="date" name="starts_at" value="{{ old('starts_at', optional($exam->starts_at)->format('Y-m-d')) }}">
+                            </label>
+                            <label>
+                                Deadline
+                                <input type="date" name="ends_at" value="{{ old('ends_at', optional($exam->ends_at)->format('Y-m-d')) }}">
+                            </label>
+                            <label>
+                                Duration (minutes)
+                                <input type="number" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes) }}" min="1" max="1440">
+                            </label>
+                            <label>
+                                1st position gift
+                                <input name="first_prize" value="{{ old('first_prize', $exam->first_prize) }}" placeholder="Example: Trophy + certificate">
+                            </label>
+                            <label>
+                                2nd position gift
+                                <input name="second_prize" value="{{ old('second_prize', $exam->second_prize) }}" placeholder="Example: Medal">
+                            </label>
+                            <label>
+                                3rd position gift
+                                <input name="third_prize" value="{{ old('third_prize', $exam->third_prize) }}" placeholder="Example: Gift box">
+                            </label>
+                            <label>
                                 Class
                                 <select class="js-exam-class" name="academic_class_id">
                                     <option value="">Select class</option>
@@ -239,6 +326,17 @@
                                 <select class="js-exam-chapter" name="chapter_id" data-selected-chapter="{{ old('chapter_id', $exam->chapter_id) }}" disabled>
                                     <option value="">Select class and subject first</option>
                                 </select>
+                            </label>
+                            <label>
+                                Question selection
+                                <select class="js-question-selection-mode" name="question_selection_mode">
+                                    <option value="manual" @selected(old('question_selection_mode', 'manual') === 'manual')>Select manually</option>
+                                    <option value="random" @selected(old('question_selection_mode') === 'random')>Random questions</option>
+                                </select>
+                            </label>
+                            <label class="js-random-question-count-field">
+                                Random question count
+                                <input class="js-random-question-count" type="number" name="random_question_count" value="{{ old('random_question_count', $exam->questions_count) }}" min="1" max="500">
                             </label>
                             <label>
                                 Questions
@@ -273,6 +371,7 @@
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
     <script>
         if (window.jQuery) {
             $(function () {
@@ -283,6 +382,17 @@
                     $group.toggleClass('is-open');
                     $submenu.stop(true, true).slideToggle(180);
                 });
+
+                if ($.fn.DataTable && $('#exams-table').length) {
+                    $('#exams-table').DataTable({
+                        pageLength: 10,
+                        lengthMenu: [5, 10, 25, 50],
+                        order: [[0, 'asc']],
+                        columnDefs: [
+                            { orderable: false, searchable: false, targets: -1 },
+                        ],
+                    });
+                }
 
                 const $class = $('#exam-class');
                 const $subject = $('#exam-subject');
@@ -371,9 +481,27 @@
                     });
                 }
 
+                function toggleQuestionSelectionMode($form) {
+                    const mode = $form.find('.js-question-selection-mode').val() || 'manual';
+                    const isRandom = mode === 'random';
+                    const $questionsField = $form.find('.js-exam-questions, #exam-questions');
+                    const $randomCountField = $form.find('.js-random-question-count-field');
+                    const $randomCountInput = $form.find('.js-random-question-count');
+
+                    $questionsField.closest('label').toggle(! isRandom);
+                    $questionsField.prop('disabled', isRandom);
+                    $randomCountField.toggle(isRandom);
+                    $randomCountInput.prop('disabled', ! isRandom);
+                }
+
                 $('.js-exam-form, form[action="{{ route('exams.store') }}"]').each(function () {
                     const $form = $(this);
                     loadChapterOptions($form);
+                    toggleQuestionSelectionMode($form);
+                });
+
+                $(document).on('change', '.js-question-selection-mode', function () {
+                    toggleQuestionSelectionMode($(this).closest('form'));
                 });
 
                 $(document).on('change', '.js-exam-class, #exam-class, .js-exam-subject, #exam-subject', function () {

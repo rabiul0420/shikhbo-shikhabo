@@ -78,6 +78,7 @@
 
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct is-active" href="{{ route('admin.results.index') }}">Result</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
             </nav>
         </aside>
 
@@ -127,6 +128,9 @@
                                     <th>Subject</th>
                                     <th>Oddhay / Chapter</th>
                                     <th>Score</th>
+                                    @if ($exam)
+                                        <th>Gift</th>
+                                    @endif
                                     <th>Submitted</th>
                                     <th>Action</th>
                                 </tr>
@@ -143,6 +147,9 @@
                                         <td>{{ $attempt->exam->subject->name }}</td>
                                             <td>{{ $attempt->exam->chapter->display_name }}</td>
                                         <td>{{ $attempt->score }} / {{ $attempt->total_marks }}</td>
+                                        @if ($exam)
+                                            <td>{{ $exam->prizeForPosition($attemptPositions[$attempt->id]) ?: '-' }}</td>
+                                        @endif
                                         <td>{{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</td>
                                         <td>
                                             <a class="button secondary small" href="{{ route('exam-attempts.result', $attempt) }}">View result</a>

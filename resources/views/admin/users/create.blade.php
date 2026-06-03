@@ -72,6 +72,7 @@
 
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
             </nav>
         </aside>
 
@@ -96,8 +97,8 @@
                         <input type="email" name="email" value="{{ old('email') }}">
                     </label>
                     <label>
-                        Phone Number
-                        <input name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX">
+                        Mobile Number
+                        <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="01XXXXXXXXX" required>
                     </label>
                     <label>
                         Password

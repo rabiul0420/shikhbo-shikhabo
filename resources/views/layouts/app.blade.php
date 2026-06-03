@@ -1,18 +1,72 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KX5YMCXV92"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+    @php
+        $siteName = 'Shikhbo Shikhabo';
+        $defaultDescription = 'Shikhbo Shikhabo helps students practise class-wise, subject-wise, and chapter-wise online exams with quick results.';
+        $seoTitle = $title ?? $siteName;
+        $fullTitle = str_contains($seoTitle, $siteName) ? $seoTitle : $seoTitle . ' | ' . $siteName;
+        $seoDescription = $description ?? $defaultDescription;
+        $privateRoute = request()->routeIs([
+            'admin.*',
+            'login',
+            'register',
+            'profile.*',
+            'exam-attempts.*',
+            'exams.*',
+        ]);
+        $seoRobots = $robots ?? ($privateRoute ? 'noindex, nofollow' : 'index, follow');
+        $seoCanonical = $canonical ?? url()->current();
+        $seoImage = $image ?? asset('logo.svg');
+        $schemaGraph = [
+            [
+                '@type' => 'Organization',
+                '@id' => url('/') . '#organization',
+                'name' => $siteName,
+                'url' => url('/'),
+                'logo' => asset('logo.svg'),
+            ],
+            [
+                '@type' => 'WebSite',
+                '@id' => url('/') . '#website',
+                'name' => $siteName,
+                'url' => url('/'),
+                'publisher' => ['@id' => url('/') . '#organization'],
+            ],
+        ];
+    @endphp
+    @unless (request()->routeIs('admin.*'))
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-KX5YMCXV92"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-        gtag('config', 'G-KX5YMCXV92');
-    </script>
+            gtag('config', 'G-KX5YMCXV92');
+        </script>
+    @endunless
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Shikhbo Shikhabo' }}</title>
+    <title>{{ $fullTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    <meta name="robots" content="{{ $seoRobots }}">
+    <link rel="canonical" href="{{ $seoCanonical }}">
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $fullTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:url" content="{{ $seoCanonical }}">
+    <meta property="og:image" content="{{ $seoImage }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ $fullTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    <meta name="twitter:image" content="{{ $seoImage }}">
+    @if ($seoRobots === 'index, follow')
+        <script type="application/ld+json">
+            {!! json_encode(['@context' => 'https://schema.org', '@graph' => $schemaGraph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+        </script>
+    @endif
     <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
     @stack('styles')
     <style>
@@ -48,7 +102,9 @@
         .brand-logo { width: 34px; height: 34px; flex: 0 0 auto; }
         .nav { display: flex; gap: 10px; flex-wrap: wrap; }
         .nav a, .nav-button { padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 4px; color: #343a40; background: transparent; min-height: auto; font-weight: 600; }
+        .nav a.nav-highlight { background: var(--primary); border-color: var(--primary); color: #fff; }
         .nav a:hover, .nav-button:hover { background: #f8f9fa; }
+        .nav a.nav-highlight:hover { background: #0056b3; border-color: #0056b3; color: #fff; }
         .main { padding: 22px 0 56px; min-height: calc(100vh - 154px); }
         .site-footer { background: #ffffff; border-top: 1px solid var(--line); color: var(--muted); }
         .footer-inner { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 24px; align-items: center; padding: 22px 0; }
@@ -115,11 +171,23 @@
         .content-panel { max-width: 860px; }
         .content-panel h2 { margin-top: 18px; }
         .content-panel h2:first-child { margin-top: 0; }
+        .profile-page { display: grid; justify-items: center; gap: 18px; }
+        .profile-page .page-head { width: min(680px, 100%); justify-content: center; text-align: center; }
+        .profile-page .page-head p { margin-bottom: 0; }
+        .profile-card { width: min(680px, 100%); padding: 24px; }
+        .profile-card .row { justify-content: center; }
+        .profile-form { width: min(640px, 100%); margin: 0 auto; }
+        .profile-form label { gap: 8px; }
+        .profile-form-actions { justify-content: center; padding-top: 4px; }
+        .profile-photo-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+        .profile-photo-field input { min-width: 0; }
         .profile-list { display: grid; gap: 10px; margin: 0; }
-        .profile-list div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+        .profile-list div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
         .profile-list div:last-child { border-bottom: 0; }
         .profile-list dt { color: var(--muted); font-weight: 800; }
-        .profile-list dd { margin: 0; }
+        .profile-list dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+        .profile-photo-preview { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; border: 1px solid var(--line); background: #f8f9fa; }
+        .profile-photo-field .profile-photo-preview { width: 58px; height: 58px; }
         .stack { display: grid; gap: 14px; }
         .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .between { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
@@ -186,7 +254,9 @@
         .admin-page .topbar { background: #3f3a37; border-bottom-color: #3f3a37; }
         .admin-page .brand { color: #fff; }
         .admin-page .nav a, .admin-page .nav-button { color: #f1efee; border-color: rgba(255,255,255,.18); }
+        .admin-page .nav a.nav-highlight { border-color: var(--primary); color: #fff; }
         .admin-page .nav a:hover, .admin-page .nav-button:hover { background: rgba(255,255,255,.08); }
+        .admin-page .nav a.nav-highlight:hover { background: #0056b3; border-color: #0056b3; }
         .admin-page .site-footer { background: #3f3a37; border-top-color: rgba(255,255,255,.12); }
         .admin-page .site-footer .brand { color: #fff; }
         .admin-page .site-footer, .admin-page .footer-copy, .admin-page .footer-brand p { color: #d8d4d1; }
@@ -215,6 +285,11 @@
             .admin-sidebar { position: static; }
             .admin-menu, .admin-grid, .grid-2 { grid-template-columns: 1fr; }
             .stat-grid, .mini-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .profile-page .page-head { align-items: center; }
+            .profile-card { padding: 18px; }
+            .profile-photo-field { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+            .profile-list div { grid-template-columns: 1fr; gap: 5px; text-align: center; }
+            .profile-list dd { display: flex; justify-content: center; }
             h1 { font-size: 25px; }
         }
 
@@ -244,9 +319,11 @@
                         </form>
                     @endauth
                 @else
+                    <a href="{{ route('home') }}">Home</a>
                     <a href="{{ route('about-us') }}">About Us</a>
                     <a href="{{ route('contact-us') }}">Contact Us</a>
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    <a href="{{ route('home') }}#gift-winners">Gift Winners</a>
                     @auth
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>
@@ -259,6 +336,7 @@
                         </form>
                     @else
                         <a href="{{ route('login') }}">Login</a>
+                        <a class="nav-highlight" href="{{ route('register') }}">Register</a>
                     @endauth
                 @endif
             </nav>
@@ -299,6 +377,7 @@
                     <a href="{{ route('about-us') }}">About Us</a>
                     <a href="{{ route('contact-us') }}">Contact Us</a>
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    <a href="{{ route('home') }}#gift-winners">Gift Winners</a>
                     @auth
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>

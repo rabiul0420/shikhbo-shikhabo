@@ -15,7 +15,57 @@ class Exam extends Model
         'subject_id',
         'chapter_id',
         'title',
+        'starts_at',
+        'ends_at',
+        'duration_minutes',
+        'first_prize',
+        'second_prize',
+        'third_prize',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'starts_at' => 'date',
+            'ends_at' => 'date',
+            'duration_minutes' => 'integer',
+        ];
+    }
+
+    public function scheduleStatus(): string
+    {
+        $today = today();
+
+        if ($this->starts_at && $this->starts_at->gt($today)) {
+            return 'upcoming';
+        }
+
+        if ($this->ends_at && $this->ends_at->lt($today)) {
+            return 'expired';
+        }
+
+        return 'running';
+    }
+
+    public function isRunning(): bool
+    {
+        return $this->scheduleStatus() === 'running';
+    }
+
+    public function prizeForPosition(int $position): ?string
+    {
+        return match ($position) {
+            1 => $this->first_prize,
+            2 => $this->second_prize,
+            3 => $this->third_prize,
+            default => null,
+        };
+    }
+
+    public function hasPrizes(): bool
+    {
+        return (bool) ($this->first_prize || $this->second_prize || $this->third_prize);
+    }
 
     public function creator(): BelongsTo
     {
