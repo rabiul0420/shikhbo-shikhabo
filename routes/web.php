@@ -2,12 +2,14 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AcademicStructureController;
+use App\Http\Controllers\AdminCustomResultController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminGiftRecipientController;
 use App\Http\Controllers\AdminResultController;
 use App\Http\Controllers\AdminSchoolController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\CustomExamController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\QuestionController;
@@ -115,6 +117,7 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
+    Route::get('/admin/custom-results', [AdminCustomResultController::class, 'index'])->name('admin.custom-results.index');
     Route::get('/admin/gift-recipients', [AdminGiftRecipientController::class, 'index'])->name('admin.gift-recipients.index');
     Route::patch('/admin/gift-recipients/{attempt}/given', [AdminGiftRecipientController::class, 'markGiven'])->name('admin.gift-recipients.given');
     Route::get('/admin/students', [AdminStudentController::class, 'index'])->name('admin.students.index');
@@ -157,6 +160,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-profile', [AuthController::class, 'profile'])->name('profile.show');
     Route::get('/my-profile/edit', [AuthController::class, 'editProfile'])->name('profile.edit');
     Route::patch('/my-profile', [AuthController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/custom-exams/create', [CustomExamController::class, 'create'])->name('custom-exams.create');
+    Route::post('/custom-exams', [CustomExamController::class, 'store'])->name('custom-exams.store');
+    Route::get('/custom-exams/chapters/options', [CustomExamController::class, 'chapterOptions'])->name('custom-exams.chapters.options');
+    Route::get('/custom-exams/results', [CustomExamController::class, 'results'])->name('custom-exams.results');
+    Route::get('/custom-exams/{customExam}', [CustomExamController::class, 'show'])->name('custom-exams.show');
+    Route::post('/custom-exams/{customExam}/submit', [CustomExamController::class, 'submit'])->name('custom-exams.submit');
+    Route::get('/custom-exam-attempts/{attempt}', [CustomExamController::class, 'result'])->name('custom-exam-attempts.result');
     Route::get('/my-results', [ExamAttemptController::class, 'myResults'])->name('exam-attempts.index');
     Route::get('/exams/{exam}/results', [ExamAttemptController::class, 'allResults'])->name('exams.results');
     Route::post('/exams/{exam}/submit', [ExamAttemptController::class, 'submit'])->name('exams.submit');

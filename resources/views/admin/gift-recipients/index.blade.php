@@ -43,6 +43,7 @@
 
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
+                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.custom-results.index') }}">Custom Result</a>
                 <a class="admin-nav-link admin-menu-direct is-active" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
             </nav>
         </aside>

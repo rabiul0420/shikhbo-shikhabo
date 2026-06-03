@@ -390,6 +390,9 @@
             @auth
                 @if (auth()->user()->is_admin)
                     <a class="button secondary" href="{{ route('admin.exams.index') }}">Manage exams</a>
+                @else
+                    <a class="button" href="{{ route('custom-exams.create') }}">Customize Exam</a>
+                    <a class="button secondary" href="{{ route('custom-exams.results') }}">Custom Results</a>
                 @endif
             @else
                 <a class="button secondary" href="{{ route('login') }}">Login to start</a>

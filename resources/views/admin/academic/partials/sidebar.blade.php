@@ -68,12 +68,11 @@
             </div>
         @endif
 
-        <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
-        <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
-        <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
+        <a class="admin-nav-link admin-menu-direct {{ request()->routeIs('admin.students.*') ? 'is-active' : '' }}" href="{{ route('admin.students.index') }}">Student List</a>
+        <a class="admin-nav-link admin-menu-direct {{ request()->routeIs('admin.results.*', 'admin.exams.results') ? 'is-active' : '' }}" href="{{ route('admin.results.index') }}">Result</a>
+        <a class="admin-nav-link admin-menu-direct {{ request()->routeIs('admin.custom-results.*') ? 'is-active' : '' }}" href="{{ route('admin.custom-results.index') }}">Custom Result</a>
+        <a class="admin-nav-link admin-menu-direct {{ request()->routeIs('admin.gift-recipients.*') ? 'is-active' : '' }}" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
     </nav>
 </aside>
-
-
 
 

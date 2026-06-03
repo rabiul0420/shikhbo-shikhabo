@@ -325,6 +325,9 @@
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
                     <a href="{{ route('home') }}#gift-winners">Gift Winners</a>
                     @auth
+                        @unless (auth()->user()->is_admin)
+                            <a href="{{ route('custom-exams.create') }}">Customize Exam</a>
+                        @endunless
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>
                         @if (auth()->user()->is_admin)
@@ -379,6 +382,10 @@
                     <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
                     <a href="{{ route('home') }}#gift-winners">Gift Winners</a>
                     @auth
+                        @unless (auth()->user()->is_admin)
+                            <a href="{{ route('custom-exams.create') }}">Customize Exam</a>
+                            <a href="{{ route('custom-exams.results') }}">Custom Results</a>
+                        @endunless
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>
                     @else

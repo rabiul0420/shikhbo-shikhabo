@@ -2104,4 +2104,154 @@ TEXT;
             ->assertDontSee('<td>4</td>', false);
     }
 
+    public function test_student_can_create_and_submit_custom_exam(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Math']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_no' => '1',
+            'name' => 'Algebra',
+        ]);
+
+        $firstQuestion = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => '2 + 2 = ?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $firstCorrectOption = $firstQuestion->options()->create([
+            'option_text' => '4',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+        $firstQuestion->options()->create([
+            'option_text' => '5',
+            'is_correct' => false,
+            'sort_order' => 2,
+        ]);
+
+        $secondQuestion = \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => '3 + 3 = ?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 2,
+            'is_active' => true,
+        ]);
+        $secondCorrectOption = $secondQuestion->options()->create([
+            'option_text' => '6',
+            'is_correct' => true,
+            'sort_order' => 1,
+        ]);
+        $secondQuestion->options()->create([
+            'option_text' => '7',
+            'is_correct' => false,
+            'sort_order' => 2,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('custom-exams.create'))
+            ->assertOk()
+            ->assertSee('Customize Exam')
+            ->assertSee('Math');
+
+        $this->actingAs($student)
+            ->post(route('custom-exams.store'), [
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+                'question_count' => 2,
+            ])
+            ->assertRedirect();
+
+        $customExam = \App\Models\CustomExam::firstOrFail();
+        $this->assertSame(2, $customExam->questions()->count());
+
+        $this->actingAs($student)
+            ->get(route('custom-exams.show', $customExam))
+            ->assertOk()
+            ->assertSee('2 + 2 = ?')
+            ->assertSee('3 + 3 = ?');
+
+        $this->actingAs($student)
+            ->post(route('custom-exams.submit', $customExam), [
+                'answers' => [
+                    $firstQuestion->id => [$firstCorrectOption->id],
+                    $secondQuestion->id => [$secondCorrectOption->id],
+                ],
+            ])
+            ->assertRedirect();
+
+        $attempt = \App\Models\CustomExamAttempt::firstOrFail();
+
+        $this->assertDatabaseHas('custom_exam_attempts', [
+            'custom_exam_id' => $customExam->id,
+            'user_id' => $student->id,
+            'score' => 2,
+            'total_marks' => 2,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('custom-exam-attempts.result', $attempt))
+            ->assertOk()
+            ->assertSee('Custom Result')
+            ->assertSee('2 / 2');
+    }
+
+    public function test_admin_can_view_student_custom_exam_results(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $student = User::factory()->create([
+            'name' => 'Custom Result Student',
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Science']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_no' => '2',
+            'name' => 'Light',
+        ]);
+        $customExam = \App\Models\CustomExam::create([
+            'user_id' => $student->id,
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Science - Light Custom Exam',
+            'question_count' => 5,
+            'total_marks' => 5,
+        ]);
+        $attempt = \App\Models\CustomExamAttempt::create([
+            'custom_exam_id' => $customExam->id,
+            'user_id' => $student->id,
+            'status' => 'graded',
+            'score' => 4,
+            'total_marks' => 5,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.custom-results.index'))
+            ->assertOk()
+            ->assertSee('Student Custom Exam Results')
+            ->assertSee('Custom Result Student')
+            ->assertSee('Science - Light Custom Exam')
+            ->assertSee('4 / 5')
+            ->assertSee(route('custom-exam-attempts.result', $attempt));
+    }
+
 }
