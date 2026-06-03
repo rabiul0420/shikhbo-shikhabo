@@ -24,10 +24,10 @@ class ExamAttemptController extends Controller
         return view('exam-attempts.index', compact('attempts'));
     }
 
-    public function allResults(Exam $exam): View
+    public function allResults(Request $request, Exam $exam): View
     {
         $exam->load(['academicClass', 'subject', 'chapter']);
-        $this->authorizeExamForUser($exam);
+        $this->authorizeExamResultsForUser($request, $exam);
 
         $attempts = ExamAttempt::query()
             ->with('user')
@@ -205,7 +205,20 @@ class ExamAttemptController extends Controller
 
         $attempt->load(['exam.questions.options', 'answers.option']);
 
-        return view('exam-attempts.result', compact('attempt'));
+        $examAttempts = ExamAttempt::query()
+            ->where('exam_id', $attempt->exam_id)
+            ->orderByDesc('score')
+            ->latest('submitted_at')
+            ->get();
+        $attemptPositions = $this->attemptPositions($examAttempts);
+        $attemptPosition = $attemptPositions[$attempt->id] ?? null;
+        $participantCount = $examAttempts->count();
+
+        return view('exam-attempts.result', compact(
+            'attempt',
+            'attemptPosition',
+            'participantCount'
+        ));
     }
 
     private function attemptPositions($attempts): array
@@ -236,6 +249,21 @@ class ExamAttemptController extends Controller
 
         abort_unless(
             $user->is_admin || (int) $exam->academic_class_id === (int) $user->academic_class_id,
+            403
+        );
+    }
+
+    private function authorizeExamResultsForUser(Request $request, Exam $exam): void
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user->is_admin
+                || (int) $exam->academic_class_id === (int) $user->academic_class_id
+                || ExamAttempt::query()
+                    ->where('exam_id', $exam->id)
+                    ->where('user_id', $user->id)
+                    ->exists(),
             403
         );
     }

@@ -21,7 +21,7 @@ class ExampleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_guest_top_menu_shows_public_pages_and_login_only(): void
+    public function test_guest_top_menu_shows_public_pages_and_auth_links(): void
     {
         $this->get('/')
             ->assertOk()
@@ -31,11 +31,11 @@ class ExampleTest extends TestCase
             ->assertSee('Privacy Policy')
             ->assertSee('Gift Winners')
             ->assertSee('Login')
+            ->assertSee('Register')
             ->assertDontSee('Take Exam')
             ->assertDontSee('My Profile')
             ->assertDontSee('My Result')
-            ->assertDontSee('Logout')
-            ->assertDontSee('Register');
+            ->assertDontSee('Logout');
     }
 
     public function test_logged_in_top_menu_shows_profile_and_logout(): void
@@ -345,6 +345,46 @@ class ExampleTest extends TestCase
             ->assertSee(route('exam-attempts.result', $ownAttempt))
             ->assertDontSee(route('exam-attempts.result', $otherAttempt))
             ->assertSee('Details private');
+    }
+
+    public function test_student_can_view_all_results_for_an_exam_they_attempted(): void
+    {
+        $examClass = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $currentClass = \App\Models\AcademicClass::create(['name' => 'Class 6']);
+        $student = User::factory()->create([
+            'name' => 'Current Student',
+            'academic_class_id' => $currentClass->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $examClass->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $student->id,
+            'academic_class_id' => $examClass->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Attempted Exam Results',
+        ]);
+
+        \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'status' => 'graded',
+            'score' => 8,
+            'total_marks' => 10,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('exams.results', $exam))
+            ->assertOk()
+            ->assertSee('Attempted Exam Results')
+            ->assertSee('Current Student');
     }
 
     public function test_public_info_pages_are_available(): void
