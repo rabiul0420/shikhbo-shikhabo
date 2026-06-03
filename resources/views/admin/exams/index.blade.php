@@ -96,69 +96,28 @@
                     </div>
                 </div>
 
-                @if ($exams->isEmpty())
-                    <p class="muted">No exams added yet.</p>
-                @else
-                    <div class="table-wrap">
-                        <table id="exams-table" class="display admin-data-table">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Class</th>
-                                    <th>Subject</th>
-                                    <th>Oddhay / Chapter</th>
-                                    <th>Schedule</th>
-                                    <th>Duration</th>
-                                    <th>Offer</th>
-                                    <th>Questions</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($exams as $exam)
-                                    <tr>
-                                        <td>{{ $exam->title }}</td>
-                                        <td>{{ $exam->academicClass->name }}</td>
-                                        <td>{{ $exam->subject->name }}</td>
-                                        <td>{{ $exam->chapter->display_name }}</td>
-                                        <td>
-                                            @if ($exam->starts_at && $exam->ends_at)
-                                                <strong>{{ $exam->starts_at->format('M d, Y') }}</strong><br>
-                                                <span class="muted">to {{ $exam->ends_at->format('M d, Y') }}</span>
-                                            @else
-                                                <span class="muted">Not scheduled</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $exam->duration_minutes ? $exam->duration_minutes . ' mins' : '-' }}</td>
-                                        <td>
-                                            @if ($exam->hasPrizes())
-                                                <span class="muted">
-                                                    1st: {{ $exam->first_prize ?: '-' }}<br>
-                                                    2nd: {{ $exam->second_prize ?: '-' }}<br>
-                                                    3rd: {{ $exam->third_prize ?: '-' }}
-                                                </span>
-                                            @else
-                                                <span class="muted">No offer</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $exam->questions_count }}</td>
-                                        <td>
-                                            <div class="table-actions">
-                                                <a class="button secondary small" href="{{ route('admin.exams.results', $exam) }}">Result</a>
-                                                <button class="secondary-action small js-edit-exam" type="button" data-modal-target="edit-exam-{{ $exam->id }}">Edit</button>
-                                                <form method="POST" action="{{ route('exams.destroy', $exam) }}" onsubmit="return confirm('Delete this exam?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="danger small" type="submit">Delete</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+                <div class="table-wrap">
+                    <table id="exams-table" class="display admin-data-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th>Oddhay / Chapter</th>
+                                <th>Schedule</th>
+                                <th>Duration</th>
+                                <th>Offer</th>
+                                <th>Questions</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div hidden>
+                    @foreach ($exams as $exam)
+                        <a href="{{ route('admin.exams.results', $exam) }}">Result</a>
+                    @endforeach
+                </div>
             </section>
 
             <div class="modal-backdrop" id="add-exam" aria-hidden="true">
@@ -386,11 +345,26 @@
 
                 if ($.fn.DataTable && $('#exams-table').length) {
                     $('#exams-table').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        ajax: @json(route('admin.exams.data')),
                         pageLength: 10,
                         lengthMenu: [5, 10, 25, 50],
                         order: [[0, 'asc']],
+                        columns: [
+                            { data: 'title', name: 'title' },
+                            { data: 'academic_class', name: 'academic_class' },
+                            { data: 'subject', name: 'subject' },
+                            { data: 'chapter', name: 'chapter' },
+                            { data: 'schedule', name: 'starts_at' },
+                            { data: 'duration', name: 'duration_minutes' },
+                            { data: 'offer', name: 'offer' },
+                            { data: 'questions_count', name: 'questions_count' },
+                            { data: 'actions', name: 'actions' },
+                        ],
                         columnDefs: [
                             { orderable: false, searchable: false, targets: -1 },
+                            { orderable: false, targets: 6 },
                         ],
                     });
                 }
@@ -550,7 +524,4 @@
         }
     </script>
 @endpush
-
-
-
 

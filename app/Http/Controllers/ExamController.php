@@ -7,6 +7,8 @@ use App\Models\Chapter;
 use App\Models\Exam;
 use App\Models\Question;
 use App\Models\Subject;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -31,6 +33,72 @@ class ExamController extends Controller
             ->get();
 
         return view('admin.exams.index', compact('exams', 'classes', 'subjects', 'questions'));
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $columns = [
+            0 => 'title',
+            1 => 'academic_class',
+            2 => 'subject',
+            3 => 'chapter',
+            4 => 'starts_at',
+            5 => 'duration_minutes',
+            6 => 'offer',
+            7 => 'questions_count',
+        ];
+
+        $search = trim((string) $request->input('search.value', ''));
+        $start = max((int) $request->input('start', 0), 0);
+        $length = (int) $request->input('length', 10);
+        $length = $length === -1 ? 100 : min(max($length, 1), 100);
+        $orderColumn = $columns[(int) $request->input('order.0.column', 0)] ?? 'title';
+        $orderDirection = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery = Exam::query()
+            ->with(['academicClass', 'subject', 'chapter'])
+            ->withCount('questions');
+
+        $total = (clone $baseQuery)->count();
+
+        $filteredQuery = (clone $baseQuery)
+            ->when($search !== '', function (Builder $query) use ($search) {
+                $query->where(function (Builder $query) use ($search) {
+                    $query
+                        ->where('title', 'like', "%{$search}%")
+                        ->orWhere('duration_minutes', 'like', "%{$search}%")
+                        ->orWhere('first_prize', 'like', "%{$search}%")
+                        ->orWhere('second_prize', 'like', "%{$search}%")
+                        ->orWhere('third_prize', 'like', "%{$search}%")
+                        ->orWhereHas('academicClass', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('subject', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('chapter', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
+                });
+            });
+
+        $filtered = (clone $filteredQuery)->count();
+
+        $exams = $this->orderExamData($filteredQuery, $orderColumn, $orderDirection)
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        return response()->json([
+            'draw' => (int) $request->input('draw'),
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filtered,
+            'data' => $exams->map(fn (Exam $exam) => [
+                'title' => e($exam->title),
+                'academic_class' => e($exam->academicClass->name ?? '-'),
+                'subject' => e($exam->subject->name ?? '-'),
+                'chapter' => e($exam->chapter->display_name ?? '-'),
+                'schedule' => $this->scheduleHtml($exam),
+                'duration' => $exam->duration_minutes ? e($exam->duration_minutes . ' mins') : '-',
+                'offer' => $this->offerHtml($exam),
+                'questions_count' => $exam->questions_count,
+                'actions' => $this->actionsHtml($exam),
+            ]),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -204,5 +272,53 @@ class ExamController extends Controller
         }
 
         return $questionIds;
+    }
+
+    private function orderExamData(Builder $query, string $column, string $direction): Builder
+    {
+        return match ($column) {
+            'academic_class' => $query->orderBy(
+                AcademicClass::select('name')->whereColumn('academic_classes.id', 'exams.academic_class_id'),
+                $direction
+            ),
+            'subject' => $query->orderBy(
+                Subject::select('name')->whereColumn('subjects.id', 'exams.subject_id'),
+                $direction
+            ),
+            'chapter' => $query->orderBy(
+                Chapter::select('name')->whereColumn('chapters.id', 'exams.chapter_id'),
+                $direction
+            ),
+            'duration_minutes', 'starts_at', 'questions_count' => $query->orderBy($column, $direction),
+            default => $query->orderBy('title', $direction),
+        };
+    }
+
+    private function scheduleHtml(Exam $exam): string
+    {
+        if (! $exam->starts_at || ! $exam->ends_at) {
+            return '<span class="muted">Not scheduled</span>';
+        }
+
+        return '<strong>' . e($exam->starts_at->format('M d, Y')) . '</strong><br>'
+            . '<span class="muted">to ' . e($exam->ends_at->format('M d, Y')) . '</span>';
+    }
+
+    private function offerHtml(Exam $exam): string
+    {
+        if (! $exam->hasPrizes()) {
+            return '<span class="muted">No offer</span>';
+        }
+
+        return '<span class="muted">'
+            . '1st: ' . e($exam->first_prize ?: '-') . '<br>'
+            . '2nd: ' . e($exam->second_prize ?: '-') . '<br>'
+            . '3rd: ' . e($exam->third_prize ?: '-')
+            . '</span>';
+    }
+
+    private function actionsHtml(Exam $exam): string
+    {
+        return view('admin.exams.partials.actions', compact('exam'))->render();
     }
 }
