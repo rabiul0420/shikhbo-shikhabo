@@ -102,7 +102,9 @@
         .brand-logo { width: 34px; height: 34px; flex: 0 0 auto; }
         .nav { display: flex; gap: 10px; flex-wrap: wrap; }
         .nav a, .nav-button { padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 4px; color: #343a40; background: transparent; min-height: auto; font-weight: 600; }
+        .nav a.nav-highlight { background: var(--primary); border-color: var(--primary); color: #fff; }
         .nav a:hover, .nav-button:hover { background: #f8f9fa; }
+        .nav a.nav-highlight:hover { background: #0056b3; border-color: #0056b3; color: #fff; }
         .main { padding: 22px 0 56px; min-height: calc(100vh - 154px); }
         .site-footer { background: #ffffff; border-top: 1px solid var(--line); color: var(--muted); }
         .footer-inner { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 24px; align-items: center; padding: 22px 0; }
@@ -252,7 +254,9 @@
         .admin-page .topbar { background: #3f3a37; border-bottom-color: #3f3a37; }
         .admin-page .brand { color: #fff; }
         .admin-page .nav a, .admin-page .nav-button { color: #f1efee; border-color: rgba(255,255,255,.18); }
+        .admin-page .nav a.nav-highlight { border-color: var(--primary); color: #fff; }
         .admin-page .nav a:hover, .admin-page .nav-button:hover { background: rgba(255,255,255,.08); }
+        .admin-page .nav a.nav-highlight:hover { background: #0056b3; border-color: #0056b3; }
         .admin-page .site-footer { background: #3f3a37; border-top-color: rgba(255,255,255,.12); }
         .admin-page .site-footer .brand { color: #fff; }
         .admin-page .site-footer, .admin-page .footer-copy, .admin-page .footer-brand p { color: #d8d4d1; }
@@ -332,6 +336,7 @@
                         </form>
                     @else
                         <a href="{{ route('login') }}">Login</a>
+                        <a class="nav-highlight" href="{{ route('register') }}">Register</a>
                     @endauth
                 @endif
             </nav>
