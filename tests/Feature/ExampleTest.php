@@ -30,8 +30,10 @@ class ExampleTest extends TestCase
             ->assertSee('Contact Us')
             ->assertSee('Privacy Policy')
             ->assertSee('Gift Winners')
+            ->assertSee('Customize Exam')
             ->assertSee('Login')
             ->assertSee('Register')
+            ->assertSee(route('login', ['redirect_to' => route('custom-exams.create', [], false)]))
             ->assertDontSee('Take Exam')
             ->assertDontSee('My Profile')
             ->assertDontSee('My Result')
@@ -120,7 +122,7 @@ class ExampleTest extends TestCase
             'is_admin' => false,
         ]);
 
-        $this->get('/my-profile')->assertRedirect('/login');
+        $this->get('/my-profile')->assertRedirect(route('login', ['redirect_to' => '/my-profile']));
 
         $this->actingAs($student)
             ->get('/my-profile')
@@ -240,7 +242,7 @@ class ExampleTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $this->get('/my-results')->assertRedirect('/login');
+        $this->get('/my-results')->assertRedirect(route('login', ['redirect_to' => '/my-results']));
 
         $this->actingAs($student)
             ->get('/my-results')
@@ -640,6 +642,34 @@ class ExampleTest extends TestCase
             'password' => 'password',
             'redirect_to' => route('exams.show', $exam, false),
         ])->assertRedirect(route('exams.show', $exam, false));
+    }
+
+    public function test_login_can_redirect_to_customize_exam_page(): void
+    {
+        $student = User::factory()->create([
+            'email' => 'custom-login@example.com',
+            'phone' => '01744444444',
+            'password' => bcrypt('password'),
+            'is_admin' => false,
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Customize Exam')
+            ->assertSee(route('login', ['redirect_to' => route('custom-exams.create', [], false)]));
+
+        $this->get(route('login', ['redirect_to' => route('custom-exams.create', [], false)]))
+            ->assertOk()
+            ->assertSee('name="redirect_to"', false)
+            ->assertSee(route('custom-exams.create', [], false), false);
+
+        $this->post(route('login'), [
+            'phone' => '01744444444',
+            'password' => 'password',
+            'redirect_to' => route('custom-exams.create', [], false),
+        ])->assertRedirect(route('custom-exams.create', [], false));
+
+        $this->assertAuthenticatedAs($student);
     }
 
     public function test_home_page_groups_exams_by_schedule_status(): void

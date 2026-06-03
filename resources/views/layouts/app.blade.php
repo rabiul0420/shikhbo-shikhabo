@@ -338,6 +338,7 @@
                             <button class="nav-button" type="submit">Logout</button>
                         </form>
                     @else
+                        <a href="{{ route('login', ['redirect_to' => route('custom-exams.create', [], false)]) }}">Customize Exam</a>
                         <a href="{{ route('login') }}">Login</a>
                         <a class="nav-highlight" href="{{ route('register') }}">Register</a>
                     @endauth
@@ -389,6 +390,7 @@
                         <a href="{{ route('profile.show') }}">My Profile</a>
                         <a href="{{ route('exam-attempts.index') }}">My Result</a>
                     @else
+                        <a href="{{ route('login', ['redirect_to' => route('custom-exams.create', [], false)]) }}">Customize Exam</a>
                         <a href="{{ route('login') }}">Login</a>
                     @endauth
                 </nav>

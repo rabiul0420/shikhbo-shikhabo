@@ -395,6 +395,7 @@
                     <a class="button secondary" href="{{ route('custom-exams.results') }}">Custom Results</a>
                 @endif
             @else
+                <a class="button" href="{{ route('login', ['redirect_to' => route('custom-exams.create', [], false)]) }}">Customize Exam</a>
                 <a class="button secondary" href="{{ route('login') }}">Login to start</a>
             @endauth
             <div class="exam-summary" aria-label="Exam summary">

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,5 +27,18 @@ return Application::configure(basePath: dirname(__DIR__))
             : route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (TokenMismatchException $exception, Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            $redirectTo = $request->input('redirect_to');
+            $query = $redirectTo && str_starts_with($redirectTo, '/') && ! str_starts_with($redirectTo, '//')
+                ? ['redirect_to' => $redirectTo]
+                : [];
+
+            return redirect()
+                ->route($request->is('admin*') ? 'admin.login' : 'login', $query)
+                ->with('status', 'Your session expired. Please login again.');
+        });
     })->create();
