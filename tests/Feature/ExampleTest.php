@@ -2239,6 +2239,71 @@ TEXT;
             ->assertSee('2 / 2');
     }
 
+    public function test_custom_exam_question_count_matches_selected_class_subject_and_chapter(): void
+    {
+        $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $otherClass = \App\Models\AcademicClass::create(['name' => 'Class 6']);
+        $student = User::factory()->create([
+            'academic_class_id' => $class->id,
+            'is_admin' => false,
+        ]);
+        $subject = \App\Models\Subject::create(['name' => 'Math']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_no' => '1',
+            'name' => 'Algebra',
+        ]);
+        $otherChapter = \App\Models\Chapter::create([
+            'academic_class_id' => $otherClass->id,
+            'subject_id' => $subject->id,
+            'chapter_no' => '1',
+            'name' => 'Algebra',
+        ]);
+
+        foreach (range(1, 3) as $index) {
+            \App\Models\Question::create([
+                'academic_class_id' => $class->id,
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+                'question_text' => 'Active question ' . $index,
+                'type' => 'single_choice',
+                'marks' => 1,
+                'sort_order' => $index,
+                'is_active' => true,
+            ]);
+        }
+
+        \App\Models\Question::create([
+            'academic_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'Inactive question',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 4,
+            'is_active' => false,
+        ]);
+        \App\Models\Question::create([
+            'academic_class_id' => $otherClass->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $otherChapter->id,
+            'question_text' => 'Wrong class question',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($student)
+            ->getJson(route('custom-exams.questions.count', [
+                'subject_id' => $subject->id,
+                'chapter_id' => $chapter->id,
+            ]))
+            ->assertOk()
+            ->assertJson(['count' => 3]);
+    }
+
     public function test_admin_can_view_student_custom_exam_results(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

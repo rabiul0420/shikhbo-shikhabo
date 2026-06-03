@@ -163,6 +163,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/custom-exams/create', [CustomExamController::class, 'create'])->name('custom-exams.create');
     Route::post('/custom-exams', [CustomExamController::class, 'store'])->name('custom-exams.store');
     Route::get('/custom-exams/chapters/options', [CustomExamController::class, 'chapterOptions'])->name('custom-exams.chapters.options');
+    Route::get('/custom-exams/questions/count', [CustomExamController::class, 'questionCount'])->name('custom-exams.questions.count');
     Route::get('/custom-exams/results', [CustomExamController::class, 'results'])->name('custom-exams.results');
     Route::get('/custom-exams/{customExam}', [CustomExamController::class, 'show'])->name('custom-exams.show');
     Route::post('/custom-exams/{customExam}/submit', [CustomExamController::class, 'submit'])->name('custom-exams.submit');

@@ -33,6 +33,20 @@
 
         .custom-exam-card h2 { font-size: 20px; margin-bottom: 7px; }
         .custom-exam-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+        .question-count-note {
+            display: inline-flex;
+            align-items: center;
+            min-height: 22px;
+            margin-left: 8px;
+            padding: 2px 8px;
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .question-count-note[hidden] { display: none; }
 
         @media (max-width: 760px) {
             .custom-exam-hero,
@@ -76,7 +90,10 @@
                 </select>
             </label>
             <label>
-                Questions
+                <span>
+                    Questions
+                    <span id="available-question-count" class="question-count-note" hidden></span>
+                </span>
                 <input type="number" name="question_count" min="1" max="100" value="{{ old('question_count', 10) }}" required>
             </label>
             <button type="submit">Create exam</button>
@@ -122,6 +139,16 @@
     <script>
         const subjectSelect = document.getElementById('custom-subject');
         const chapterSelect = document.getElementById('custom-chapter');
+        const availableQuestionCount = document.getElementById('available-question-count');
+
+        function updateQuestionCountNote(text = '') {
+            if (! availableQuestionCount) {
+                return;
+            }
+
+            availableQuestionCount.textContent = text;
+            availableQuestionCount.hidden = ! text;
+        }
 
         async function loadCustomChapters() {
             if (! subjectSelect || ! chapterSelect) {
@@ -131,6 +158,7 @@
             const subjectId = subjectSelect.value;
             const selectedChapterId = chapterSelect.dataset.selected;
             chapterSelect.innerHTML = '<option value="">Select chapter</option>';
+            updateQuestionCountNote();
 
             if (! subjectId) {
                 return;
@@ -150,9 +178,30 @@
             });
 
             chapterSelect.dataset.selected = '';
+            loadQuestionCount();
+        }
+
+        async function loadQuestionCount() {
+            if (! subjectSelect || ! chapterSelect || ! subjectSelect.value || ! chapterSelect.value) {
+                updateQuestionCountNote();
+                return;
+            }
+
+            updateQuestionCountNote('Loading...');
+
+            const params = new URLSearchParams({
+                subject_id: subjectSelect.value,
+                chapter_id: chapterSelect.value,
+            });
+            const response = await fetch(`{{ route('custom-exams.questions.count') }}?${params.toString()}`);
+            const data = await response.json();
+            const count = Number(data.count || 0);
+
+            updateQuestionCountNote(`${count} available`);
         }
 
         subjectSelect?.addEventListener('change', loadCustomChapters);
+        chapterSelect?.addEventListener('change', loadQuestionCount);
         loadCustomChapters();
     </script>
 @endpush

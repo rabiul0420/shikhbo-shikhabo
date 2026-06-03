@@ -53,6 +53,23 @@ class CustomExamController extends Controller
         ]);
     }
 
+    public function questionCount(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'subject_id' => ['required', 'exists:subjects,id'],
+            'chapter_id' => ['required', 'exists:chapters,id'],
+        ]);
+
+        $count = Question::query()
+            ->where('academic_class_id', $request->user()->academic_class_id)
+            ->where('subject_id', $data['subject_id'])
+            ->where('chapter_id', $data['chapter_id'])
+            ->where('is_active', true)
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
