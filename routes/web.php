@@ -9,10 +9,12 @@ use App\Http\Controllers\AdminResultController;
 use App\Http\Controllers\AdminSchoolController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\ClassExamController;
 use App\Http\Controllers\CustomExamController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\QuestionController;
+use App\Models\AcademicClass;
 use App\Models\Exam;
 use App\Models\GiftAward;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +47,28 @@ Route::get('/', function () {
     return view('welcome', compact('exams', 'givenGiftAwards'));
 })->name('home');
 
+Route::get('/locale/{locale}', function (string $locale) {
+    abort_unless(in_array($locale, ['bn', 'en'], true), 404);
+
+    session(['locale' => $locale]);
+
+    return redirect()->back(fallback: route('home'));
+})->name('locale.switch');
+
+Route::get('/exams', [ClassExamController::class, 'directory'])->name('exams.directory');
+
+Route::get('/classes/{classSlug}/exams', [ClassExamController::class, 'index'])
+    ->where('classSlug', '[A-Za-z0-9\-]+')
+    ->name('classes.exams');
+
+Route::get('/classes/{academicClass}/{slug}/exams', function (AcademicClass $academicClass) {
+    return redirect()->route('classes.exams', $academicClass->slug, 301);
+})->whereNumber('academicClass')->where('slug', '[A-Za-z0-9\-]+');
+
+Route::get('/classes/{academicClass}/exams', function (AcademicClass $academicClass) {
+    return redirect()->route('classes.exams', $academicClass->slug, 301);
+})->whereNumber('academicClass');
+
 Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
 Route::view('/about-us', 'pages.about-us')->name('about-us');
 Route::view('/contact-us', 'pages.contact-us')->name('contact-us');
@@ -66,10 +90,19 @@ Route::get('/robots.txt', function () {
 Route::get('/sitemap.xml', function () {
     $urls = collect([
         ['loc' => route('home'), 'priority' => '1.0'],
+        ['loc' => route('exams.directory'), 'priority' => '0.9'],
         ['loc' => route('about-us'), 'priority' => '0.7'],
         ['loc' => route('contact-us'), 'priority' => '0.7'],
         ['loc' => route('privacy-policy'), 'priority' => '0.5'],
     ])->merge(
+        AcademicClass::query()
+            ->orderBy('name')
+            ->get()
+            ->map(fn (AcademicClass $class) => [
+                'loc' => route('classes.exams', $class->slug),
+                'priority' => '0.6',
+            ])
+    )->merge(
         Exam::query()
             ->withCount('questions')
             ->whereHas('questions')
@@ -77,7 +110,7 @@ Route::get('/sitemap.xml', function () {
             ->latest()
             ->get()
             ->map(fn (Exam $exam) => [
-                'loc' => route('exams.show', $exam),
+                'loc' => route('exams.show', $exam->slug),
                 'priority' => '0.8',
             ])
     );
@@ -175,4 +208,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/exam-attempts/{attempt}', [ExamAttemptController::class, 'result'])->name('exam-attempts.result');
 });
 
-Route::get('/exams/{exam}', [ExamAttemptController::class, 'show'])->name('exams.show');
+Route::get('/exams/{exam}', function (Exam $exam) {
+    return redirect()->route('exams.show', $exam->slug, 301);
+})->whereNumber('exam');
+
+Route::get('/exams/{examSlug}', [ExamAttemptController::class, 'show'])
+    ->where('examSlug', '[A-Za-z0-9\-]+')
+    ->name('exams.show');

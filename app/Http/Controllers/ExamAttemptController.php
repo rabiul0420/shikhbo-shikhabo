@@ -52,8 +52,10 @@ class ExamAttemptController extends Controller
         ));
     }
 
-    public function show(Exam $exam): View
+    public function show(string $examSlug): View
     {
+        $exam = Exam::findBySlug($examSlug) ?? abort(404);
+
         $exam->load(['academicClass', 'subject', 'chapter']);
         $this->authorizeExamForUser($exam);
 
