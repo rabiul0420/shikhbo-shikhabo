@@ -6,48 +6,45 @@
 
 @push('styles')
     <style>
-        .exam-hero {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 24px;
+        .exam-intro-bar {
+            display: flex;
             align-items: center;
-            margin-bottom: 24px;
-            padding: 26px;
-            border: 1px solid #dfe5ec;
-            background:
-                linear-gradient(135deg, rgba(14, 165, 233, .10), rgba(5, 150, 105, .10)),
-                #ffffff;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border: 1px solid #dce5ee;
+            border-left: 4px solid #2563eb;
+            background: #ffffff;
         }
 
-        .exam-hero h1 { font-size: 38px; }
-        .exam-hero p { max-width: 660px; margin-bottom: 0; }
-        .exam-hero-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        .exam-summary {
+        .exam-intro-copy {
             display: grid;
-            grid-template-columns: repeat(2, minmax(104px, 1fr));
-            gap: 10px;
-            min-width: 244px;
+            gap: 4px;
+            min-width: 0;
         }
 
-        .exam-summary-item {
-            padding: 12px;
-            border: 1px solid #d6e2ea;
-            background: rgba(255, 255, 255, .76);
-        }
-
-        .exam-summary-item strong {
-            display: block;
+        .exam-intro-copy h1 {
+            margin: 0;
             color: #1f2d3d;
-            font-size: 25px;
-            line-height: 1;
-            margin-bottom: 5px;
+            font-size: 22px;
+            line-height: 1.2;
         }
 
-        .exam-summary-item span {
+        .exam-intro-copy p {
+            margin: 0;
             color: #6c757d;
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .exam-intro-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 0 0 auto;
         }
 
         .class-exam-list { display: grid; gap: 22px; }
@@ -105,7 +102,7 @@
         .status-expired { background: #fef2f2; color: #b91c1c; }
         .exam-card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 14px;
             padding: 16px;
         }
@@ -265,6 +262,12 @@
         }
 
         .exam-card-actions .button { min-width: 118px; }
+        .exam-list-controls {
+            display: flex;
+            justify-content: center;
+            padding: 0 16px 16px;
+        }
+
         .empty-exam-panel {
             display: grid;
             gap: 10px;
@@ -275,47 +278,127 @@
         }
 
         .gift-winners-section {
+            position: relative;
             display: grid;
-            gap: 14px;
-            margin-top: 24px;
-            padding: 18px;
-            border: 1px solid #f4c27a;
-            background: linear-gradient(135deg, #fff7ed, #f0fdf4);
+            gap: 18px;
+            margin-bottom: 24px;
+            padding: 20px;
+            border: 1px solid #e4c475;
+            background:
+                linear-gradient(135deg, rgba(255, 248, 228, .96), rgba(238, 249, 245, .96)),
+                #ffffff;
+            box-shadow: 0 16px 36px rgba(31, 45, 61, .08);
+            overflow: hidden;
         }
 
-        .gift-winners-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 12px;
+        .gift-winners-section::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 7px;
+            background: linear-gradient(180deg, #f59e0b, #20a16b, #2f6da8);
+        }
+
+        .gift-winners-section .status-section-head {
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .gift-winners-section .eyebrow {
+            color: #a15c00;
+        }
+
+        .gift-winners-section h2 {
+            color: #1f2d3d;
+            font-size: 28px;
+        }
+
+        .gift-winner-count {
+            border: 1px solid #b7ead4;
+            background: #e9fbf2;
+            color: #07533e;
+            box-shadow: 0 7px 18px rgba(7, 83, 62, .08);
+        }
+
+        .gift-winners-slider {
+            position: relative;
+            overflow: hidden;
+            padding: 0 48px;
+        }
+
+        .gift-winners-track {
+            display: flex;
+            transition: transform .45s ease;
+            will-change: transform;
         }
 
         .gift-winner-card {
+            position: relative;
             display: grid;
-            gap: 8px;
-            padding: 12px;
-            border: 1px solid #f1d39b;
-            background: rgba(255, 255, 255, .82);
+            grid-template-columns: 172px minmax(0, 1fr);
+            grid-template-areas:
+                "photo meta"
+                "photo name"
+                "photo school"
+                "photo details"
+                "photo gift";
+            align-items: center;
+            flex: 0 0 100%;
+            gap: 9px 20px;
+            min-height: 214px;
+            padding: 22px;
+            border: 1px solid rgba(202, 157, 70, .5);
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .86)),
+                #ffffff;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+            overflow: hidden;
+        }
+
+        .gift-winner-card::after {
+            content: "Gift";
+            position: absolute;
+            right: 22px;
+            bottom: 14px;
+            color: rgba(47, 109, 168, .08);
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 1;
+            pointer-events: none;
         }
 
         .gift-winner-head {
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr);
-            gap: 12px;
-            align-items: center;
+            display: contents;
+        }
+
+        .gift-winner-head > div {
+            display: contents;
         }
 
         .gift-winner-photo {
+            grid-area: photo;
+            position: relative;
             display: inline-grid;
             place-items: center;
-            width: 58px;
-            height: 58px;
+            width: 156px;
+            height: 156px;
             border-radius: 50%;
-            border: 1px solid #f1d39b;
-            background: #eef6ff;
+            border: 5px solid #ffffff;
+            background: linear-gradient(135deg, #e8f3ff, #fef3c7);
             color: #2f6da8;
-            font-size: 21px;
+            font-size: 48px;
             font-weight: 900;
+            box-shadow: 0 0 0 1px #e4c475, 0 16px 28px rgba(31, 45, 61, .14);
             overflow: hidden;
+        }
+
+        .gift-winner-photo::after {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            border-radius: inherit;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+            pointer-events: none;
         }
 
         .gift-winner-photo img {
@@ -325,35 +408,157 @@
         }
 
         .gift-winner-card h3 {
+            grid-area: name;
+            position: relative;
             margin: 0;
-            font-size: 18px;
+            color: #1f2d3d;
+            font-size: 26px;
+            line-height: 1.2;
+            z-index: 1;
         }
 
         .gift-winner-meta {
+            grid-area: meta;
+            position: relative;
             display: flex;
             gap: 8px;
             align-items: center;
             flex-wrap: wrap;
+            z-index: 1;
+        }
+
+        .gift-position-pill {
+            background: #fff4d6;
+            border: 1px solid #f3c961;
+            color: #8a4b00;
+        }
+
+        .gift-given-pill {
+            border: 1px solid #b7ead4;
         }
 
         .gift-name {
-            color: #9a3412;
+            grid-area: gift;
+            position: relative;
+            width: fit-content;
+            max-width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #f3c961;
+            background: #fff8e6;
+            color: #8a4b00;
+            font-size: 18px;
             font-weight: 900;
+            margin-bottom: 0;
+            overflow-wrap: anywhere;
+            z-index: 1;
         }
 
         .gift-school {
+            grid-area: school;
+            position: relative;
             margin-bottom: 0;
             font-size: 14px;
+            z-index: 1;
+        }
+
+        .gift-winner-details {
+            grid-area: details;
+            position: relative;
+            margin-bottom: 0;
+            z-index: 1;
+        }
+
+        .gift-slider-control {
+            position: absolute;
+            top: 50%;
+            z-index: 2;
+            width: 38px;
+            height: 50px;
+            min-height: 50px;
+            padding: 0;
+            border: 1px solid #dfc37e;
+            background: #ffffff;
+            color: #8a4b00;
+            font-size: 28px;
+            line-height: 1;
+            box-shadow: 0 9px 22px rgba(31,45,61,.1);
+            transform: translateY(-50%);
+        }
+
+        .gift-slider-control:hover {
+            background: #fff8e6;
+            color: #663700;
+        }
+
+        .gift-slider-prev { left: 0; }
+        .gift-slider-next { right: 0; }
+
+        .gift-slider-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .gift-slider-dot {
+            width: 8px;
+            height: 8px;
+            border: 0;
+            border-radius: 999px;
+            background: #d7c7a6;
+            cursor: pointer;
+            transition: width .18s ease, background .18s ease;
+        }
+
+        .gift-slider-dot.is-active {
+            width: 20px;
+            background: #20a16b;
+        }
+
+        @media (max-width: 1020px) {
+            .exam-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (max-width: 760px) {
-            .exam-hero { grid-template-columns: 1fr; padding: 18px; }
-            .exam-hero h1 { font-size: 29px; }
-            .exam-hero-actions { justify-content: flex-start; }
-            .exam-summary { min-width: 0; width: 100%; }
+            .exam-intro-bar {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 13px 14px;
+            }
+            .exam-intro-copy h1 { font-size: 20px; }
+            .exam-intro-actions { justify-content: flex-start; width: 100%; }
             .status-section-head { align-items: flex-start; flex-direction: column; }
             .class-section-head { align-items: flex-start; flex-direction: column; }
+            .exam-card-grid { grid-template-columns: 1fr; }
             .exam-meta { grid-template-columns: 1fr; }
+            .gift-winners-section { padding: 16px; }
+            .gift-winners-section h2 { font-size: 24px; }
+            .gift-winners-slider { padding: 0 34px; }
+            .gift-winner-card {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "meta"
+                    "photo"
+                    "name"
+                    "school"
+                    "details"
+                    "gift";
+                justify-items: center;
+                text-align: center;
+                min-height: 354px;
+                padding: 18px 14px;
+            }
+            .gift-winner-photo {
+                width: 126px;
+                height: 126px;
+            }
+            .gift-winner-meta { justify-content: center; }
+            .gift-name { width: 100%; }
+            .gift-slider-control {
+                width: 30px;
+                height: 44px;
+                min-height: 44px;
+            }
         }
     </style>
 @endpush
@@ -362,8 +567,6 @@
     @php
         $examGroups = collect(['running', 'upcoming', 'expired'])
             ->mapWithKeys(fn ($status) => [$status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status)]);
-        $examsByClass = $exams->groupBy(fn ($exam) => $exam->academicClass->name ?? 'Unassigned Class');
-        $subjectCount = $exams->pluck('subject.name')->filter()->unique()->count();
         $statusLabels = [
             'running' => 'Running Exam',
             'upcoming' => 'Upcoming Exam',
@@ -371,22 +574,84 @@
         ];
     @endphp
 
-    <div class="exam-hero">
-        <div>
-            <h1>Available Exams</h1>
-            <p class="muted">
+    @if ($givenGiftAwards->isNotEmpty())
+        <section id="gift-winners" class="gift-winners-section" aria-labelledby="gift-winners-title">
+            <div class="status-section-head">
+                <div>
+                    <span class="eyebrow">Gift Winners</span>
+                    <h2 id="gift-winners-title">Gift Received Students</h2>
+                </div>
+                <span class="pill gift-winner-count">{{ $givenGiftAwards->count() }} students</span>
+            </div>
+
+            <div class="gift-winners-slider" data-gift-slider>
+                <div class="gift-winners-track" data-gift-track>
+                    @foreach ($givenGiftAwards as $award)
+                        <article class="gift-winner-card">
+                            <div class="gift-winner-meta">
+                                <span class="pill gift-position-pill">{{ $award->position }}{{ $award->position === 1 ? 'st' : ($award->position === 2 ? 'nd' : ($award->position === 3 ? 'rd' : 'th')) }}</span>
+                                <span class="pill published gift-given-pill">Given</span>
+                            </div>
+                            <div class="gift-winner-head">
+                                <span class="gift-winner-photo">
+                                    @if ($award->attempt->user->profile_photo_path)
+                                        <img
+                                            src="{{ asset($award->attempt->user->profile_photo_path) }}"
+                                            alt="{{ $award->attempt->user->name }} profile picture"
+                                        >
+                                    @else
+                                        {{ \Illuminate\Support\Str::of($award->attempt->user->name)->substr(0, 1)->upper() }}
+                                    @endif
+                                </span>
+                                <div>
+                                    <h3>{{ $award->attempt->user->name }}</h3>
+                                    <p class="muted gift-school">{{ $award->attempt->user->school->title ?? 'School not added' }}</p>
+                                </div>
+                            </div>
+                            <p class="muted gift-winner-details">
+                                {{ $award->attempt->user->academicClass->name ?? '-' }}
+                                / {{ $award->attempt->exam->title }}
+                            </p>
+                            <p class="gift-name">{{ $award->gift_title }}</p>
+                        </article>
+                    @endforeach
+                </div>
+
+                @if ($givenGiftAwards->count() > 1)
+                    <button class="gift-slider-control gift-slider-prev" type="button" data-gift-prev aria-label="Previous gift winner">&lsaquo;</button>
+                    <button class="gift-slider-control gift-slider-next" type="button" data-gift-next aria-label="Next gift winner">&rsaquo;</button>
+
+                    <div class="gift-slider-dots" aria-label="Gift winner slideshow controls">
+                        @foreach ($givenGiftAwards as $award)
+                            <button
+                                class="gift-slider-dot {{ $loop->first ? 'is-active' : '' }}"
+                                type="button"
+                                data-gift-slide="{{ $loop->index }}"
+                                aria-label="Show gift winner {{ $loop->iteration }}"
+                            ></button>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
+    <section class="exam-intro-bar" aria-labelledby="exam-intro-title">
+        <div class="exam-intro-copy">
+            <h1 id="exam-intro-title">Exams</h1>
+            <p>
                 @auth
                     @if (! auth()->user()->is_admin && auth()->user()->academicClass)
-                        Exams for {{ auth()->user()->academicClass->name }} are shown here.
+                        Showing exams for {{ auth()->user()->academicClass->name }}.
                     @else
-                        Choose your class, pick an exam, and submit your answers to see the result instantly.
+                        Running, upcoming, and expired exams in one place.
                     @endif
                 @else
-                    Choose your class, pick an exam, and submit your answers to see the result instantly.
+                    Pick an exam and login when you are ready to start.
                 @endauth
             </p>
         </div>
-        <div class="exam-hero-actions">
+        <div class="exam-intro-actions">
             @auth
                 @if (auth()->user()->is_admin)
                     <a class="button secondary" href="{{ route('admin.exams.index') }}">Manage exams</a>
@@ -396,28 +661,10 @@
                 @endif
             @else
                 <a class="button" href="{{ route('login', ['redirect_to' => route('custom-exams.create', [], false)]) }}">Customize Exam</a>
-                <a class="button secondary" href="{{ route('login') }}">Login to start</a>
+                <a class="button secondary" href="{{ route('login') }}">Login</a>
             @endauth
-            <div class="exam-summary" aria-label="Exam summary">
-                <div class="exam-summary-item">
-                    <strong>{{ $exams->count() }}</strong>
-                    <span>Exams</span>
-                </div>
-                <div class="exam-summary-item">
-                    <strong>{{ $examsByClass->count() }}</strong>
-                    <span>Classes</span>
-                </div>
-                <div class="exam-summary-item">
-                    <strong>{{ $subjectCount }}</strong>
-                    <span>Subjects</span>
-                </div>
-                <div class="exam-summary-item">
-                    <strong>{{ $exams->sum(fn ($exam) => $exam->questions->count()) }}</strong>
-                    <span>Questions</span>
-                </div>
-            </div>
         </div>
-    </div>
+    </section>
 
     @if ($exams->isEmpty())
         <section class="empty-exam-panel">
@@ -470,87 +717,26 @@
                                 </div>
 
                                 <div class="exam-card-grid">
-                                    @foreach ($classExams as $exam)
+                                    @foreach ($classExams->take(3) as $exam)
                                         @php
                                             $existingAttempt = auth()->check() && ! auth()->user()->is_admin
                                                 ? $exam->attempts->first()
                                                 : null;
                                         @endphp
-                                        <article class="exam-card">
-                                            <div class="exam-card-head">
-                                                <span class="eyebrow">{{ $exam->subject->name }}</span>
-                                                <h3>{{ $exam->title }}</h3>
-                                            </div>
-
-                                            <div class="exam-meta">
-                                                <div class="exam-meta-item">
-                                                    <span>Chapter</span>
-                                                    <strong>{{ $exam->chapter->display_name }}</strong>
-                                                </div>
-                                                <div class="exam-meta-item">
-                                                    <span>Questions</span>
-                                                    <strong>{{ $exam->questions->count() }}</strong>
-                                                </div>
-                                                <div class="exam-meta-item">
-                                                    <span>Starts</span>
-                                                    <strong>{{ $exam->starts_at ? $exam->starts_at->format('M d, Y') : 'Not scheduled' }}</strong>
-                                                </div>
-                                                <div class="exam-meta-item">
-                                                    <span>Deadline</span>
-                                                    <strong>{{ $exam->ends_at ? $exam->ends_at->format('M d, Y') : 'Not scheduled' }}</strong>
-                                                </div>
-                                                <div class="exam-meta-item">
-                                                    <span>Duration</span>
-                                                    <strong>{{ $exam->duration_minutes ? $exam->duration_minutes . ' mins' : '-' }}</strong>
-                                                </div>
-                                                @if ($exam->hasPrizes())
-                                                    <div class="exam-meta-item offer-tooltip" tabindex="0">
-                                                        <span>Offer</span>
-                                                        <strong>Top 3 gifts</strong>
-                                                        <div class="offer-tooltip-popover" role="tooltip">
-                                                            @if ($exam->first_prize)
-                                                                <div class="offer-tooltip-row">
-                                                                    <span>1st</span>
-                                                                    <strong>{{ $exam->first_prize }}</strong>
-                                                                </div>
-                                                            @endif
-                                                            @if ($exam->second_prize)
-                                                                <div class="offer-tooltip-row">
-                                                                    <span>2nd</span>
-                                                                    <strong>{{ $exam->second_prize }}</strong>
-                                                                </div>
-                                                            @endif
-                                                            @if ($exam->third_prize)
-                                                                <div class="offer-tooltip-row">
-                                                                    <span>3rd</span>
-                                                                    <strong>{{ $exam->third_prize }}</strong>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                @endif
-                                            </div>
-
-                                            <div class="exam-card-actions">
-                                                <span class="pill status-{{ $status }}">{{ ucfirst($status) }}</span>
-                                                @if ($existingAttempt)
-                                                    <span class="pill status-expired">Already participated</span>
-                                                    <a class="button secondary" href="{{ route('exam-attempts.result', $existingAttempt) }}">View result</a>
-                                                @elseif (! auth()->check())
-                                                    <a class="button secondary" href="{{ route('exams.show', $exam) }}">View details</a>
-                                                    <a class="button" href="{{ route('login', ['redirect_to' => route('exams.show', $exam, false)]) }}">Login to start</a>
-                                                @elseif ($status === 'running')
-                                                    <a class="button" href="{{ route('exams.show', $exam) }}">Start exam</a>
-                                                @elseif ($status === 'upcoming')
-                                                    <span class="pill status-upcoming">Not started</span>
-                                                    <a class="button secondary" href="{{ route('exams.show', $exam) }}">View details</a>
-                                                @else
-                                                    <a class="button" href="{{ route('exams.show', $exam) }}">View questions</a>
-                                                @endif
-                                            </div>
-                                        </article>
+                                        @include('exams.partials.card', [
+                                            'exam' => $exam,
+                                            'status' => $status,
+                                            'existingAttempt' => $existingAttempt,
+                                        ])
                                     @endforeach
                                 </div>
+                                @if ($classExams->count() > 3 && $classExams->first()->academicClass)
+                                    <div class="exam-list-controls">
+                                        <a class="button secondary" href="{{ route('classes.exams.index', $classExams->first()->academicClass) }}">
+                                            See more
+                                        </a>
+                                    </div>
+                                @endif
                             </section>
                         @endforeach
                     @endif
@@ -559,47 +745,36 @@
         </div>
     @endif
 
-    @if ($givenGiftAwards->isNotEmpty())
-        <section id="gift-winners" class="gift-winners-section" aria-labelledby="gift-winners-title">
-            <div class="status-section-head">
-                <div>
-                    <span class="eyebrow">Gift Winners</span>
-                    <h2 id="gift-winners-title">Gift Received Students</h2>
-                </div>
-                <span class="pill status-running">{{ $givenGiftAwards->count() }} students</span>
-            </div>
-
-            <div class="gift-winners-grid">
-                @foreach ($givenGiftAwards as $award)
-                    <article class="gift-winner-card">
-                        <div class="gift-winner-meta">
-                            <span class="pill">{{ $award->position }}{{ $award->position === 1 ? 'st' : ($award->position === 2 ? 'nd' : ($award->position === 3 ? 'rd' : 'th')) }}</span>
-                            <span class="pill published">Given</span>
-                        </div>
-                        <div class="gift-winner-head">
-                            <span class="gift-winner-photo">
-                                @if ($award->attempt->user->profile_photo_path)
-                                    <img
-                                        src="{{ asset($award->attempt->user->profile_photo_path) }}"
-                                        alt="{{ $award->attempt->user->name }} profile picture"
-                                    >
-                                @else
-                                    {{ \Illuminate\Support\Str::of($award->attempt->user->name)->substr(0, 1)->upper() }}
-                                @endif
-                            </span>
-                            <div>
-                                <h3>{{ $award->attempt->user->name }}</h3>
-                                <p class="muted gift-school">{{ $award->attempt->user->school->title ?? 'School not added' }}</p>
-                            </div>
-                        </div>
-                        <p class="muted">
-                            {{ $award->attempt->user->academicClass->name ?? '-' }}
-                            / {{ $award->attempt->exam->title }}
-                        </p>
-                        <p class="gift-name">{{ $award->gift_title }}</p>
-                    </article>
-                @endforeach
-            </div>
-        </section>
-    @endif
 @endsection
+
+@push('scripts')
+    <script>
+        document.querySelectorAll('[data-gift-slider]').forEach((slider) => {
+            const track = slider.querySelector('[data-gift-track]');
+            const cards = Array.from(track.querySelectorAll('.gift-winner-card'));
+            const dots = Array.from(slider.querySelectorAll('[data-gift-slide]'));
+            const prev = slider.querySelector('[data-gift-prev]');
+            const next = slider.querySelector('[data-gift-next]');
+
+            if (cards.length < 2) {
+                return;
+            }
+
+            let activeIndex = 0;
+
+            const showSlide = (index) => {
+                activeIndex = (index + cards.length) % cards.length;
+                track.style.transform = `translateX(-${activeIndex * 100}%)`;
+                dots.forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === activeIndex));
+            };
+
+            dots.forEach((dot) => {
+                dot.addEventListener('click', () => showSlide(Number(dot.dataset.giftSlide)));
+            });
+            prev.addEventListener('click', () => showSlide(activeIndex - 1));
+            next.addEventListener('click', () => showSlide(activeIndex + 1));
+
+            window.setInterval(() => showSlide(activeIndex + 1), 3500);
+        });
+    </script>
+@endpush

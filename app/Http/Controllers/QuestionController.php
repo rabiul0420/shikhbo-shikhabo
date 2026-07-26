@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -18,7 +19,7 @@ class QuestionController extends Controller
     public function create(): View
     {
         $classes = AcademicClass::query()->orderBy('name')->get();
-        $subjects = Subject::query()->orderBy('name')->get();
+        $subjects = Subject::query()->with('academicClasses')->orderBy('name')->get();
 
         return view('admin.questions.create', compact('classes', 'subjects'));
     }
@@ -27,7 +28,11 @@ class QuestionController extends Controller
     {
         $data = $request->validate([
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
             'chapter_id' => ['required', 'exists:chapters,id'],
             'question_text' => ['required', 'string'],
             'options' => ['required', 'array', 'min:2'],
@@ -98,7 +103,11 @@ class QuestionController extends Controller
     {
         $data = $request->validate([
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
             'chapter_id' => ['required', 'exists:chapters,id'],
             'bulk_questions' => ['required', 'string'],
         ]);

@@ -13,6 +13,7 @@ use App\Http\Controllers\CustomExamController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\QuestionController;
+use App\Models\AcademicClass;
 use App\Models\Exam;
 use App\Models\GiftAward;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,32 @@ Route::get('/', function () {
 
     return view('welcome', compact('exams', 'givenGiftAwards'));
 })->name('home');
+
+Route::get('/classes/{academicClass}/exams', function (AcademicClass $academicClass) {
+    abort_if(
+        auth()->check()
+            && ! auth()->user()->is_admin
+            && auth()->user()->academic_class_id !== $academicClass->id,
+        404
+    );
+
+    $examRelations = ['academicClass', 'subject', 'chapter', 'questions'];
+
+    if (auth()->check() && ! auth()->user()->is_admin) {
+        $examRelations['attempts'] = fn ($query) => $query
+            ->where('user_id', auth()->id())
+            ->latest('submitted_at')
+            ->latest();
+    }
+
+    $exams = Exam::query()
+        ->with($examRelations)
+        ->where('academic_class_id', $academicClass->id)
+        ->latest()
+        ->get();
+
+    return view('exams.class-index', compact('academicClass', 'exams'));
+})->name('classes.exams.index');
 
 Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
 Route::view('/about-us', 'pages.about-us')->name('about-us');
@@ -116,6 +143,8 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
     Route::get('/admin/exams/data', [ExamController::class, 'data'])->name('admin.exams.data');
+    Route::get('/admin/exams/questions/options', [ExamController::class, 'questionOptions'])->name('admin.exams.questions.options');
+    Route::get('/admin/exams/{exam}/edit-data', [ExamController::class, 'editData'])->name('admin.exams.edit-data');
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
     Route::get('/admin/custom-results', [AdminCustomResultController::class, 'index'])->name('admin.custom-results.index');
