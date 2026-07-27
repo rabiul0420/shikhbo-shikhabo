@@ -8,6 +8,7 @@ use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AcademicStructureController extends Controller
@@ -21,15 +22,22 @@ class AcademicStructureController extends Controller
 
     public function subjects(): View
     {
-        $subjects = Subject::query()->orderBy('name')->get();
+        $classes = AcademicClass::query()->orderBy('name')->get();
+        $subjects = Subject::query()
+            ->with('academicClasses')
+            ->orderBy('name')
+            ->get();
 
-        return view('admin.academic.subjects', compact('subjects'));
+        return view('admin.academic.subjects', compact('classes', 'subjects'));
     }
 
     public function chapters(): View
     {
         $classes = AcademicClass::query()->orderBy('name')->get();
-        $subjects = Subject::query()->orderBy('name')->get();
+        $subjects = Subject::query()
+            ->with('academicClasses')
+            ->orderBy('name')
+            ->get();
         $chapters = Chapter::query()
             ->with(['academicClass', 'subject'])
             ->orderBy('chapter_no')
@@ -43,7 +51,11 @@ class AcademicStructureController extends Controller
     {
         $data = $request->validate([
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
         ]);
 
         $chapters = Chapter::query()
@@ -88,18 +100,38 @@ class AcademicStructureController extends Controller
 
     public function storeSubject(Request $request): RedirectResponse
     {
-        Subject::create($request->validate([
-            'name' => ['required', 'string', 'max:150', 'unique:subjects,name'],
-        ]));
+        $data = $request->validate([
+            'academic_class_ids' => ['required', 'array', 'min:1'],
+            'academic_class_ids.*' => ['exists:academic_classes,id'],
+            'name' => [
+                'required',
+                'string',
+                'max:150',
+                Rule::unique('subjects', 'name'),
+            ],
+        ]);
+
+        $subject = Subject::create(['name' => $data['name']]);
+        $subject->academicClasses()->sync($data['academic_class_ids']);
 
         return back()->with('status', 'Subject added.');
     }
 
     public function updateSubject(Request $request, Subject $subject): RedirectResponse
     {
-        $subject->update($request->validate([
-            'name' => ['required', 'string', 'max:150', 'unique:subjects,name,' . $subject->id],
-        ]));
+        $data = $request->validate([
+            'academic_class_ids' => ['required', 'array', 'min:1'],
+            'academic_class_ids.*' => ['exists:academic_classes,id'],
+            'name' => [
+                'required',
+                'string',
+                'max:150',
+                Rule::unique('subjects', 'name')->ignore($subject->id),
+            ],
+        ]);
+
+        $subject->update(['name' => $data['name']]);
+        $subject->academicClasses()->sync($data['academic_class_ids']);
 
         return back()->with('status', 'Subject updated.');
     }
@@ -115,7 +147,11 @@ class AcademicStructureController extends Controller
     {
         Chapter::create($request->validate([
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
             'chapter_no' => ['required', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:150'],
         ]));
@@ -127,7 +163,11 @@ class AcademicStructureController extends Controller
     {
         $chapter->update($request->validate([
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
             'chapter_no' => ['required', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:150'],
         ]));

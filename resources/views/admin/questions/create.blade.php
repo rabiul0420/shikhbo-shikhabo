@@ -105,7 +105,7 @@
                         <select name="subject_id">
                             <option value="">Select subject</option>
                             @foreach ($subjects as $subject)
-                                <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
+                                <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -173,7 +173,7 @@ D) কাজ
                         <select name="subject_id">
                             <option value="">Select subject</option>
                             @foreach ($subjects as $subject)
-                                <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
+                                <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -244,6 +244,32 @@ D) কাজ
                         }));
                     }
 
+                    function filterSubjects() {
+                        const selectedClass = String($classSelect.val() || '');
+                        let selectedOptionVisible = false;
+
+                        $subjectSelect.find('option').each(function () {
+                            const $option = $(this);
+
+                            if (! $option.val()) {
+                                $option.prop('hidden', false);
+                                return;
+                            }
+
+                            const optionClasses = String($option.data('class-ids') || '').split(',').filter(Boolean);
+                            const isVisible = optionClasses.includes(selectedClass);
+                            $option.prop('hidden', ! isVisible);
+
+                            if ($option.is(':selected') && isVisible) {
+                                selectedOptionVisible = true;
+                            }
+                        });
+
+                        if (! selectedOptionVisible) {
+                            $subjectSelect.val('');
+                        }
+                    }
+
                     function loadChapterOptions() {
                         const selectedClass = $classSelect.val();
                         const selectedSubject = $subjectSelect.val();
@@ -288,6 +314,7 @@ D) কাজ
                     }
 
                     $classSelect.on('change', function () {
+                        filterSubjects();
                         $chapterSelect.data('selected-chapter', '');
                         loadChapterOptions();
                     });
@@ -297,6 +324,7 @@ D) কাজ
                         loadChapterOptions();
                     });
 
+                    filterSubjects();
                     loadChapterOptions();
                 });
 
@@ -324,7 +352,5 @@ D) কাজ
         }
     </script>
 @endpush
-
-
 
 

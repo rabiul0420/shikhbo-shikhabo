@@ -47,6 +47,7 @@ Route::get('/', function () {
     return view('welcome', compact('exams', 'givenGiftAwards'));
 })->name('home');
 
+
 Route::get('/locale/{locale}', function (string $locale) {
     abort_unless(in_array($locale, ['bn', 'en'], true), 404);
 
@@ -68,6 +69,7 @@ Route::get('/classes/{academicClass}/{slug}/exams', function (AcademicClass $aca
 Route::get('/classes/{academicClass}/exams', function (AcademicClass $academicClass) {
     return redirect()->route('classes.exams', $academicClass->slug, 301);
 })->whereNumber('academicClass');
+
 
 Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
 Route::view('/about-us', 'pages.about-us')->name('about-us');
@@ -149,6 +151,8 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
     Route::get('/admin/exams/data', [ExamController::class, 'data'])->name('admin.exams.data');
+    Route::get('/admin/exams/questions/options', [ExamController::class, 'questionOptions'])->name('admin.exams.questions.options');
+    Route::get('/admin/exams/{exam}/edit-data', [ExamController::class, 'editData'])->name('admin.exams.edit-data');
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
     Route::get('/admin/custom-results', [AdminCustomResultController::class, 'index'])->name('admin.custom-results.index');

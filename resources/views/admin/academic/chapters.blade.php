@@ -76,7 +76,7 @@
                         @csrf
                         <label>
                             Class
-                            <select name="academic_class_id">
+                            <select name="academic_class_id" data-class-subject-filter>
                                 <option value="">Select class</option>
                                 @foreach ($classes as $class)
                                     <option value="{{ $class->id }}">{{ $class->name }}</option>
@@ -85,10 +85,10 @@
                         </label>
                         <label>
                             Subject
-                            <select name="subject_id">
+                            <select name="subject_id" data-subject-options>
                                 <option value="">Select subject</option>
                                 @foreach ($subjects as $subject)
-                                    <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                                    <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -124,7 +124,7 @@
                             @method('PATCH')
                             <label>
                                 Class
-                                <select name="academic_class_id">
+                                <select name="academic_class_id" data-class-subject-filter>
                                     @foreach ($classes as $class)
                                         <option value="{{ $class->id }}" @selected((int) $chapter->academic_class_id === (int) $class->id)>{{ $class->name }}</option>
                                     @endforeach
@@ -132,9 +132,9 @@
                             </label>
                             <label>
                                 Subject
-                                <select name="subject_id">
+                                <select name="subject_id" data-subject-options>
                                     @foreach ($subjects as $subject)
-                                        <option value="{{ $subject->id }}" @selected((int) $chapter->subject_id === (int) $subject->id)>{{ $subject->name }}</option>
+                                        <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}" @selected((int) $chapter->subject_id === (int) $subject->id)>{{ $subject->name }}</option>
                                     @endforeach
                                 </select>
                             </label>
@@ -159,3 +159,43 @@
 @endsection
 
 @include('admin.academic.partials.scripts', ['tableId' => 'chapters-table'])
+
+@push('scripts')
+    <script>
+        document.querySelectorAll('[data-class-subject-filter]').forEach((classSelect) => {
+            const form = classSelect.closest('form');
+            const subjectSelect = form?.querySelector('[data-subject-options]');
+
+            if (!subjectSelect) {
+                return;
+            }
+
+            const filterSubjects = () => {
+                const selectedClass = classSelect.value;
+                let selectedOptionVisible = false;
+
+                subjectSelect.querySelectorAll('option').forEach((option) => {
+                    if (!option.value) {
+                        option.hidden = false;
+                        return;
+                    }
+
+                    const optionClasses = (option.dataset.classIds || '').split(',').filter(Boolean);
+                    const isVisible = optionClasses.includes(selectedClass);
+                    option.hidden = !isVisible;
+
+                    if (option.selected && isVisible) {
+                        selectedOptionVisible = true;
+                    }
+                });
+
+                if (!selectedOptionVisible) {
+                    subjectSelect.value = '';
+                }
+            };
+
+            classSelect.addEventListener('change', filterSubjects);
+            filterSubjects();
+        });
+    </script>
+@endpush
