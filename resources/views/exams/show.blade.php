@@ -1,7 +1,15 @@
 @extends('layouts.app', [
-    'title' => $exam->title,
-    'description' => $exam->title . ' exam preview for ' . $exam->academicClass->name . ', ' . $exam->subject->name . ', ' . $exam->chapter->display_name . '. Check exam marks, duration, schedule, and login to participate.',
-    'canonical' => route('exams.show', $exam),
+    'title' => $exam->title . ' | ' . ($exam->academicClass->name ?? '') . ' Model Test',
+    'description' => $exam->title . ' — ' . ($exam->academicClass->name ?? '') . ', ' . ($exam->subject->name ?? '') . ', ' . ($exam->chapter->display_name ?? '') . '. Online BD model test practice on Shikhbo Shikhabo with schedule, duration, and instant results.',
+    'keywords' => implode(', ', array_filter([
+        $exam->title,
+        ($exam->academicClass->name ?? null) . ' model test',
+        ($exam->subject->name ?? null) . ' MCQ',
+        'BD model test',
+        'online exam practice',
+        'Shikhbo Shikhabo',
+    ])),
+    'canonical' => route('exams.show', $exam->slug),
     'robots' => 'index, follow',
 ])
 

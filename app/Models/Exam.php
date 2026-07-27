@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Exam extends Model
 {
@@ -15,6 +16,7 @@ class Exam extends Model
         'subject_id',
         'chapter_id',
         'title',
+        'slug',
         'starts_at',
         'ends_at',
         'duration_minutes',
@@ -22,6 +24,44 @@ class Exam extends Model
         'second_prize',
         'third_prize',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Exam $exam) {
+            if ($exam->isDirty('title') || blank($exam->slug)) {
+                $exam->slug = static::uniqueSlugFor($exam->title, $exam->id);
+            }
+        });
+    }
+
+    public static function uniqueSlugFor(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title);
+        $base = $base !== '' ? $base : 'exam';
+        $slug = $base;
+        $suffix = 2;
+
+        while (
+            static::query()
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = $base.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    public static function findBySlug(string $slug): ?self
+    {
+        if (is_numeric($slug)) {
+            return static::query()->whereKey($slug)->first();
+        }
+
+        return static::query()->where('slug', $slug)->first();
+    }
 
     protected function casts(): array
     {
