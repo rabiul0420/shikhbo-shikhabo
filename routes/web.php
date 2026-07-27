@@ -37,6 +37,16 @@ Route::get('/', function () {
         ->latest()
         ->get();
 
+    $examsByClass = $exams
+        ->whereNotNull('academic_class_id')
+        ->groupBy('academic_class_id');
+
+    $subjectCount = $exams
+        ->whereNotNull('subject_id')
+        ->pluck('subject_id')
+        ->unique()
+        ->count();
+
     $givenGiftAwards = GiftAward::query()
         ->with(['attempt.user.academicClass', 'attempt.user.school', 'attempt.exam'])
         ->where('status', 'given')
@@ -44,7 +54,7 @@ Route::get('/', function () {
         ->take(12)
         ->get();
 
-    return view('welcome', compact('exams', 'givenGiftAwards'));
+    return view('welcome', compact('exams', 'examsByClass', 'subjectCount', 'givenGiftAwards'));
 })->name('home');
 
 
