@@ -63,6 +63,11 @@ class Exam extends Model
         return static::query()->where('slug', $slug)->first();
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     protected function casts(): array
     {
         return [

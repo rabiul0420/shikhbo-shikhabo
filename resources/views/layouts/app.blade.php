@@ -7,7 +7,7 @@
         $seoTitle = $title ?? $siteName;
         $fullTitle = str_contains($seoTitle, $siteName) ? $seoTitle : $seoTitle . ' | ' . $siteName;
         $seoDescription = $description ?? $defaultDescription;
-        $privateRoute = request()->routeIs([
+        $privateRoute = locale_route_is(
             'admin.*',
             'login',
             'register',
@@ -20,7 +20,7 @@
             'exams.destroy',
             'custom-exams.*',
             'custom-exam-attempts.*',
-        ]);
+        );
         $seoRobots = $robots ?? ($privateRoute ? 'noindex, nofollow' : 'index, follow');
         $seoCanonical = $canonical ?? url()->current();
         $seoImage = $image ?? asset('logo.svg');
@@ -39,12 +39,15 @@
                 'name' => $siteName,
                 'url' => url('/'),
                 'publisher' => ['@id' => url('/') . '#organization'],
-                'inLanguage' => ['bn', 'en'],
+                'inLanguage' => app()->getLocale(),
             ],
         ];
         if (! empty($schemaExtra ?? [])) {
             $schemaGraph = array_merge($schemaGraph, $schemaExtra);
         }
+        $hasLocalizedRoute = request()->route() && ! request()->routeIs('admin.*', 'robots', 'sitemap');
+        $seoAlternateEn = $hasLocalizedRoute ? alternate_locale_url('en') : null;
+        $seoAlternateBn = $hasLocalizedRoute ? alternate_locale_url('bn') : null;
     @endphp
     @unless (request()->routeIs('admin.*'))
         <!-- Google tag (gtag.js) -->
@@ -66,12 +69,19 @@
     @endif
     <meta name="robots" content="{{ $seoRobots }}">
     <link rel="canonical" href="{{ $seoCanonical }}">
+    @if ($seoAlternateEn && $seoAlternateBn)
+        <link rel="alternate" hreflang="en" href="{{ $seoAlternateEn }}">
+        <link rel="alternate" hreflang="bn" href="{{ $seoAlternateBn }}">
+        <link rel="alternate" hreflang="x-default" href="{{ $seoAlternateEn }}">
+    @endif
     <meta property="og:site_name" content="{{ $siteName }}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="{{ $fullTitle }}">
     <meta property="og:description" content="{{ $seoDescription }}">
     <meta property="og:url" content="{{ $seoCanonical }}">
     <meta property="og:image" content="{{ $seoImage }}">
+    <meta property="og:locale" content="{{ app()->getLocale() === 'bn' ? 'bn_BD' : 'en_US' }}">
+    <meta property="og:locale:alternate" content="{{ app()->getLocale() === 'bn' ? 'en_US' : 'bn_BD' }}">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{{ $fullTitle }}">
     <meta name="twitter:description" content="{{ $seoDescription }}">
@@ -477,7 +487,7 @@
         }
     </style>
 </head>
-<body class="{{ request()->routeIs('admin.*') ? 'admin-page' : '' }}{{ request()->routeIs('home') ? ' is-home' : '' }}">
+<body class="{{ request()->routeIs('admin.*') ? 'admin-page' : '' }}{{ locale_route_is('home') ? ' is-home' : '' }}">
     <header class="topbar">
         <div class="shell topbar-inner">
             <a class="brand" href="{{ route('home') }}">
@@ -500,10 +510,10 @@
                         </form>
                     @endauth
                 @else
-                    <a class="{{ request()->routeIs('home') ? 'is-active' : '' }}" href="{{ route('home') }}">{{ __('site.nav.home') }}</a>
-                    <a class="{{ request()->routeIs('exams.directory', 'classes.exams') ? 'is-active' : '' }}" href="{{ route('exams.directory') }}">{{ __('site.nav.exams') }}</a>
-                    <a class="{{ request()->routeIs('about-us') ? 'is-active' : '' }}" href="{{ route('about-us') }}">{{ __('site.nav.about') }}</a>
-                    <a class="{{ request()->routeIs('contact-us') ? 'is-active' : '' }}" href="{{ route('contact-us') }}">{{ __('site.nav.contact') }}</a>
+                    <a class="{{ locale_route_is('home') ? 'is-active' : '' }}" href="{{ route('home') }}">{{ __('site.nav.home') }}</a>
+                    <a class="{{ locale_route_is('exams.directory', 'classes.exams') ? 'is-active' : '' }}" href="{{ route('exams.directory') }}">{{ __('site.nav.exams') }}</a>
+                    <a class="{{ locale_route_is('about-us') ? 'is-active' : '' }}" href="{{ route('about-us') }}">{{ __('site.nav.about') }}</a>
+                    <a class="{{ locale_route_is('contact-us') ? 'is-active' : '' }}" href="{{ route('contact-us') }}">{{ __('site.nav.contact') }}</a>
                     @auth
                         @unless (auth()->user()->is_admin)
                             <a href="{{ route('custom-exams.create') }}">{{ __('site.nav.custom_exam') }}</a>
@@ -522,21 +532,21 @@
                         <a class="nav-highlight" href="{{ route('register') }}">{{ __('site.nav.register') }}</a>
                     @endauth
                     <div class="lang-switch" role="group" aria-label="{{ __('site.lang.label') }}">
-                        <a class="{{ app()->getLocale() === 'bn' ? 'is-active' : '' }}" href="{{ route('locale.switch', 'bn') }}" hreflang="bn" lang="bn">{{ __('site.lang.bn') }}</a>
-                        <a class="{{ app()->getLocale() === 'en' ? 'is-active' : '' }}" href="{{ route('locale.switch', 'en') }}" hreflang="en" lang="en">{{ __('site.lang.en') }}</a>
+                        <a class="{{ app()->getLocale() === 'bn' ? 'is-active' : '' }}" href="{{ alternate_locale_url('bn') }}" hreflang="bn" lang="bn">{{ __('site.lang.bn') }}</a>
+                        <a class="{{ app()->getLocale() === 'en' ? 'is-active' : '' }}" href="{{ alternate_locale_url('en') }}" hreflang="en" lang="en">{{ __('site.lang.en') }}</a>
                     </div>
                 @endif
             </nav>
         </div>
     </header>
 
-    <main class="{{ request()->routeIs('home') ? 'main main-home' : 'shell main' }}">
+    <main class="{{ locale_route_is('home') ? 'main main-home' : 'shell main' }}">
         @if (session('status'))
-            <div class="{{ request()->routeIs('home') ? 'shell' : '' }} status">{{ session('status') }}</div>
+            <div class="{{ locale_route_is('home') ? 'shell' : '' }} status">{{ session('status') }}</div>
         @endif
 
         @if ($errors->any())
-            <div class="{{ request()->routeIs('home') ? 'shell' : '' }} errors">
+            <div class="{{ locale_route_is('home') ? 'shell' : '' }} errors">
                 <strong>{{ __('site.fix.fix_errors') }}</strong>
                 <ul>
                     @foreach ($errors->all() as $error)
@@ -592,6 +602,7 @@
                     <nav class="footer-links" aria-label="{{ __('site.footer.company') }}">
                         <a href="{{ route('about-us') }}">{{ __('site.nav.about') }}</a>
                         <a href="{{ route('contact-us') }}">{{ __('site.nav.contact') }}</a>
+                        <a href="{{ route('blog.index') }}">{{ __('site.footer.blog') }}</a>
                         <a href="{{ route('privacy-policy') }}">{{ __('site.footer.privacy') }}</a>
                     </nav>
                 </div>
