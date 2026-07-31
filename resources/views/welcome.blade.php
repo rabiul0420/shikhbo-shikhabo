@@ -8,6 +8,7 @@
 
 @push('styles')
     <style>
+
         .home-hero {
             position: relative;
             overflow: hidden;
@@ -280,6 +281,7 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: .04em;
+
         }
 
         .class-exam-list { display: grid; gap: 28px; }
@@ -340,7 +342,7 @@
 
         .exam-card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 14px;
             padding: 16px;
         }
@@ -528,6 +530,7 @@
             margin-top: auto;
         }
 
+
         .exam-card-actions .button,
         .exam-card-actions .pill {
             min-height: 26px;
@@ -545,6 +548,7 @@
 
         .exam-card-actions .button:hover {
             transform: none;
+
         }
 
         .empty-exam-panel {
@@ -723,7 +727,9 @@
         }
 
         .gift-winners-section {
+            position: relative;
             display: grid;
+
             gap: 14px;
             margin-top: 8px;
             padding: 22px;
@@ -732,35 +738,54 @@
             background: linear-gradient(135deg, #fff7ed, #f0fdf4);
         }
 
+
         .gift-winner-card {
+            position: relative;
             display: grid;
+
             gap: 8px;
             height: 100%;
             padding: 16px;
             border: 1px solid #f1d39b;
             border-radius: 16px;
             background: rgba(255, 255, 255, .92);
+
         }
 
         .gift-winner-head {
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr);
-            gap: 12px;
-            align-items: center;
+            display: contents;
+        }
+
+        .gift-winner-head > div {
+            display: contents;
         }
 
         .gift-winner-photo {
+            grid-area: photo;
+            position: relative;
             display: inline-grid;
             place-items: center;
-            width: 58px;
-            height: 58px;
+            width: 156px;
+            height: 156px;
             border-radius: 50%;
+
             border: 1px solid #f1d39b;
             background: #eef6ff;
             color: #2563eb;
             font-size: 21px;
+
             font-weight: 900;
+            box-shadow: 0 0 0 1px #e4c475, 0 16px 28px rgba(31, 45, 61, .14);
             overflow: hidden;
+        }
+
+        .gift-winner-photo::after {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            border-radius: inherit;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+            pointer-events: none;
         }
 
         .gift-winner-photo img {
@@ -770,25 +795,115 @@
         }
 
         .gift-winner-card h3 {
+            grid-area: name;
+            position: relative;
             margin: 0;
-            font-size: 18px;
+            color: #1f2d3d;
+            font-size: 26px;
+            line-height: 1.2;
+            z-index: 1;
         }
 
         .gift-winner-meta {
+            grid-area: meta;
+            position: relative;
             display: flex;
             gap: 8px;
             align-items: center;
             flex-wrap: wrap;
+            z-index: 1;
+        }
+
+        .gift-position-pill {
+            background: #fff4d6;
+            border: 1px solid #f3c961;
+            color: #8a4b00;
+        }
+
+        .gift-given-pill {
+            border: 1px solid #b7ead4;
         }
 
         .gift-name {
-            color: #9a3412;
+            grid-area: gift;
+            position: relative;
+            width: fit-content;
+            max-width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #f3c961;
+            background: #fff8e6;
+            color: #8a4b00;
+            font-size: 18px;
             font-weight: 900;
+            margin-bottom: 0;
+            overflow-wrap: anywhere;
+            z-index: 1;
         }
 
         .gift-school {
+            grid-area: school;
+            position: relative;
             margin-bottom: 0;
             font-size: 14px;
+            z-index: 1;
+        }
+
+        .gift-winner-details {
+            grid-area: details;
+            position: relative;
+            margin-bottom: 0;
+            z-index: 1;
+        }
+
+        .gift-slider-control {
+            position: absolute;
+            top: 50%;
+            z-index: 2;
+            width: 38px;
+            height: 50px;
+            min-height: 50px;
+            padding: 0;
+            border: 1px solid #dfc37e;
+            background: #ffffff;
+            color: #8a4b00;
+            font-size: 28px;
+            line-height: 1;
+            box-shadow: 0 9px 22px rgba(31,45,61,.1);
+            transform: translateY(-50%);
+        }
+
+        .gift-slider-control:hover {
+            background: #fff8e6;
+            color: #663700;
+        }
+
+        .gift-slider-prev { left: 0; }
+        .gift-slider-next { right: 0; }
+
+        .gift-slider-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .gift-slider-dot {
+            width: 8px;
+            height: 8px;
+            border: 0;
+            border-radius: 999px;
+            background: #d7c7a6;
+            cursor: pointer;
+            transition: width .18s ease, background .18s ease;
+        }
+
+        .gift-slider-dot.is-active {
+            width: 20px;
+            background: #20a16b;
+        }
+
+        @media (max-width: 1020px) {
+            .exam-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (min-width: 760px) {
@@ -806,6 +921,7 @@
         }
 
         @media (max-width: 760px) {
+
             .home-hero { min-height: auto; }
             .home-section { padding: 40px 0; }
             .why-grid, .exam-summary { grid-template-columns: 1fr; }
@@ -817,6 +933,7 @@
             .home-brand-mark strong { font-size: 22px; }
             .home-hero h1 { max-width: none; font-size: 26px; }
             .site-carousel-slide { flex-basis: 85%; }
+
         }
     </style>
 @endpush
@@ -825,8 +942,6 @@
     @php
         $examGroups = collect(['running', 'upcoming', 'expired'])
             ->mapWithKeys(fn ($status) => [$status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status)]);
-        $examsByClass = $exams->groupBy(fn ($exam) => $exam->academicClass->name ?? 'Unassigned Class');
-        $subjectCount = $exams->pluck('subject.name')->filter()->unique()->count();
         $statusLabels = [
             'running' => __('site.home.running'),
             'upcoming' => __('site.home.upcoming'),
@@ -837,6 +952,7 @@
             ? ['০১', '০২', '০৩', '০৪']
             : ['01', '02', '03', '04'];
     @endphp
+
 
     <section class="home-hero" aria-labelledby="home-hero-title">
         <div class="home-hero-orb one" aria-hidden="true"></div>
@@ -1039,6 +1155,7 @@
                                 ])
                             @endforeach
                         </section>
+
                     @endif
                 </div>
             @endif
@@ -1062,6 +1179,7 @@
                                             <span class="pill">{{ $award->position }}{{ app()->getLocale() === 'bn' ? ($award->position === 1 ? 'ম' : ($award->position === 2 ? 'য়' : ($award->position === 3 ? 'য়' : 'তম'))) : ($award->position === 1 ? 'st' : ($award->position === 2 ? 'nd' : ($award->position === 3 ? 'rd' : 'th'))) }}</span>
                                             <span class="pill published">{{ __('site.home.gift_given') }}</span>
                                         </div>
+
                                         <div class="gift-winner-head">
                                             @php
                                                 $winner = $award->attempt->user;
@@ -1100,9 +1218,11 @@
                             <button class="site-carousel-btn" type="button" data-carousel-next aria-label="{{ __('site.exam.next') }}">›</button>
                         </div>
                     </div>
+
                 </section>
             @endif
         </div>
+
     </section>
 
     <section id="testimonials" class="home-section home-section-alt" aria-labelledby="testimonials-title">
@@ -1182,10 +1302,12 @@
             </div>
         </div>
     </section>
+
 @endsection
 
 @push('scripts')
     <script>
+
         (() => {
             const carousels = document.querySelectorAll('[data-carousel]');
             if (!carousels.length) return;
@@ -1301,5 +1423,6 @@
                 startAutoplay();
             });
         })();
+
     </script>
 @endpush

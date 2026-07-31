@@ -131,6 +131,16 @@ $localizedRoutes = function () {
             ->latest()
             ->get();
 
+        $examsByClass = $exams
+            ->whereNotNull('academic_class_id')
+            ->groupBy('academic_class_id');
+
+        $subjectCount = $exams
+            ->whereNotNull('subject_id')
+            ->pluck('subject_id')
+            ->unique()
+            ->count();
+
         $givenGiftAwards = GiftAward::query()
             ->with(['attempt.user.academicClass', 'attempt.user.school', 'attempt.exam'])
             ->where('status', 'given')
@@ -138,7 +148,7 @@ $localizedRoutes = function () {
             ->take(12)
             ->get();
 
-        return view('welcome', compact('exams', 'givenGiftAwards'));
+        return view('welcome', compact('exams', 'examsByClass', 'subjectCount', 'givenGiftAwards'));
     })->name('home');
 
     Route::get('/exams', [ClassExamController::class, 'directory'])->name('exams.directory');
@@ -216,6 +226,8 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
     Route::get('/admin/exams/data', [ExamController::class, 'data'])->name('admin.exams.data');
+    Route::get('/admin/exams/questions/options', [ExamController::class, 'questionOptions'])->name('admin.exams.questions.options');
+    Route::get('/admin/exams/{exam}/edit-data', [ExamController::class, 'editData'])->name('admin.exams.edit-data');
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
     Route::get('/admin/custom-results', [AdminCustomResultController::class, 'index'])->name('admin.custom-results.index');

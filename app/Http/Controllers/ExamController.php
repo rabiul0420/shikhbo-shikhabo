@@ -20,19 +20,12 @@ class ExamController extends Controller
 {
     public function index(): View
     {
-        $exams = Exam::query()
-            ->with(['academicClass', 'subject', 'chapter', 'questions'])
-            ->withCount('questions')
-            ->latest()
-            ->get();
+        $examCount = Exam::query()->count();
+        $resultExamIds = Exam::query()->pluck('id');
         $classes = AcademicClass::query()->orderBy('name')->get();
-        $subjects = Subject::query()->orderBy('name')->get();
-        $questions = Question::query()
-            ->with(['academicClass', 'subject', 'chapter'])
-            ->latest()
-            ->get();
+        $subjects = Subject::query()->with('academicClasses')->orderBy('name')->get();
 
-        return view('admin.exams.index', compact('exams', 'classes', 'subjects', 'questions'));
+        return view('admin.exams.index', compact('examCount', 'resultExamIds', 'classes', 'subjects'));
     }
 
     public function data(Request $request): JsonResponse
@@ -101,6 +94,58 @@ class ExamController extends Controller
         ]);
     }
 
+    public function editData(Exam $exam): JsonResponse
+    {
+        $exam->load(['academicClass', 'subject', 'chapter'])->loadCount('questions');
+
+        return response()->json([
+            'exam' => [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'academic_class_id' => $exam->academic_class_id,
+                'subject_id' => $exam->subject_id,
+                'chapter_id' => $exam->chapter_id,
+                'starts_at' => optional($exam->starts_at)->format('Y-m-d'),
+                'ends_at' => optional($exam->ends_at)->format('Y-m-d'),
+                'duration_minutes' => $exam->duration_minutes,
+                'first_prize' => $exam->first_prize,
+                'second_prize' => $exam->second_prize,
+                'third_prize' => $exam->third_prize,
+                'questions_count' => $exam->questions_count,
+                'question_ids' => $exam->questions()->pluck('questions.id')->map(fn ($id) => (string) $id)->values(),
+                'update_url' => route('exams.update', $exam),
+            ],
+        ]);
+    }
+
+    public function questionOptions(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'academic_class_id' => ['required', 'integer', 'exists:academic_classes,id'],
+            'subject_id' => [
+                'required',
+                'integer',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
+            'chapter_id' => ['required', 'integer', 'exists:chapters,id'],
+        ]);
+
+        $questions = Question::query()
+            ->select(['id', 'question_text'])
+            ->where('academic_class_id', $data['academic_class_id'])
+            ->where('subject_id', $data['subject_id'])
+            ->where('chapter_id', $data['chapter_id'])
+            ->latest()
+            ->get()
+            ->map(fn (Question $question) => [
+                'id' => $question->id,
+                'text' => $question->question_text,
+            ]);
+
+        return response()->json(['questions' => $questions]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $request->merge([
@@ -110,7 +155,11 @@ class ExamController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
             'chapter_id' => ['required', 'exists:chapters,id'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
@@ -191,7 +240,11 @@ class ExamController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->input('academic_class_id')),
+            ],
             'chapter_id' => ['required', 'exists:chapters,id'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],

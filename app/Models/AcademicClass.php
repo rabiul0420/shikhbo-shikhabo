@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -14,6 +15,7 @@ class AcademicClass extends Model
     {
         return $this->hasMany(Chapter::class);
     }
+
 
     public function exams(): HasMany
     {
@@ -36,5 +38,6 @@ class AcademicClass extends Model
         return static::query()
             ->get()
             ->first(fn (self $class) => $class->slug === $slug);
+
     }
 }

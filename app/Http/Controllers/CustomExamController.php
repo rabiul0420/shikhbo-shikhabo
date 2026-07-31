@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -18,7 +19,10 @@ class CustomExamController extends Controller
 {
     public function create(Request $request): View
     {
-        $subjects = Subject::query()->orderBy('name')->get();
+        $subjects = Subject::query()
+            ->whereHas('academicClasses', fn ($query) => $query->whereKey($request->user()->academic_class_id))
+            ->orderBy('name')
+            ->get();
         $customExams = CustomExam::query()
             ->with(['subject', 'chapter', 'attempts' => fn ($query) => $query
                 ->where('user_id', $request->user()->id)
@@ -35,7 +39,11 @@ class CustomExamController extends Controller
     public function chapterOptions(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->user()->academic_class_id),
+            ],
         ]);
 
         $chapters = Chapter::query()
@@ -56,7 +64,11 @@ class CustomExamController extends Controller
     public function questionCount(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $request->user()->academic_class_id),
+            ],
             'chapter_id' => ['required', 'exists:chapters,id'],
         ]);
 
@@ -77,7 +89,11 @@ class CustomExamController extends Controller
         abort_unless($user->academic_class_id, 403);
 
         $data = $request->validate([
-            'subject_id' => ['required', 'exists:subjects,id'],
+            'subject_id' => [
+                'required',
+                Rule::exists('academic_class_subject', 'subject_id')
+                    ->where('academic_class_id', $user->academic_class_id),
+            ],
             'chapter_id' => ['required', 'exists:chapters,id'],
             'question_count' => ['required', 'integer', 'min:1', 'max:100'],
         ]);

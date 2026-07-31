@@ -101,7 +101,7 @@
                         <h2>Exam List</h2>
                     </div>
                     <div class="row">
-                        <span class="count-badge">{{ $exams->count() }}</span>
+                        <span class="count-badge">{{ $examCount }}</span>
                         <button class="js-edit-exam" type="button" data-modal-target="add-exam">Add Exam</button>
                     </div>
                 </div>
@@ -124,8 +124,8 @@
                     </table>
                 </div>
                 <div hidden>
-                    @foreach ($exams as $exam)
-                        <a href="{{ route('admin.exams.results', $exam) }}">Result</a>
+                    @foreach ($resultExamIds as $examId)
+                        <a href="{{ route('admin.exams.results', $examId) }}">Result</a>
                     @endforeach
                 </div>
             </section>
@@ -184,7 +184,7 @@
                             <select id="exam-subject" class="js-exam-subject" name="subject_id">
                                 <option value="">Select subject</option>
                                 @foreach ($subjects as $subject)
-                                    <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
+                                    <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -208,19 +208,7 @@
                         <label>
                             Questions
                             <select id="exam-questions" class="js-exam-questions" name="question_ids[]" multiple size="8">
-                                @foreach ($questions as $question)
-                                    <option
-                                        value="{{ $question->id }}"
-                                        data-class-id="{{ $question->academic_class_id }}"
-                                        data-subject-id="{{ $question->subject_id }}"
-                                        data-chapter-id="{{ $question->chapter_id }}"
-                                        data-class="{{ $question->academicClass->name ?? '' }}"
-                                        data-subject="{{ $question->subject->name ?? '' }}"
-                                        data-chapter="{{ $question->chapter->display_name ?? '' }}"
-                                    >
-                                        {{ $question->question_text }}
-                                    </option>
-                                @endforeach
+                                <option value="">Select class, subject, and chapter first</option>
                             </select>
                         </label>
                         <div class="modal-actions">
@@ -231,110 +219,95 @@
                 </div>
             </div>
 
-            @foreach ($exams as $exam)
-                <div class="modal-backdrop" id="edit-exam-{{ $exam->id }}" aria-hidden="true">
-                    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-exam-{{ $exam->id }}-title">
-                        <div class="modal-head">
-                            <div>
-                                <span class="eyebrow">Edit Exam</span>
-                                <h3 id="edit-exam-{{ $exam->id }}-title">{{ $exam->title }}</h3>
-                            </div>
-                            <button class="button secondary small js-close-modal" type="button" data-modal-close="edit-exam-{{ $exam->id }}">Close</button>
+            <div class="modal-backdrop" id="edit-exam" aria-hidden="true">
+                <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-exam-title">
+                    <div class="modal-head">
+                        <div>
+                            <span class="eyebrow">Edit Exam</span>
+                            <h3 id="edit-exam-title">Loading...</h3>
                         </div>
-
-                        <form class="stack js-exam-form" method="POST" action="{{ route('exams.update', $exam) }}">
-                            @csrf
-                            @method('PATCH')
-                            <label>
-                                Title
-                                <input name="title" value="{{ old('title', $exam->title) }}" placeholder="Write exam title">
-                            </label>
-                            <label>
-                                Start date
-                                <input type="date" name="starts_at" value="{{ old('starts_at', optional($exam->starts_at)->format('Y-m-d')) }}">
-                            </label>
-                            <label>
-                                Deadline
-                                <input type="date" name="ends_at" value="{{ old('ends_at', optional($exam->ends_at)->format('Y-m-d')) }}">
-                            </label>
-                            <label>
-                                Duration (minutes)
-                                <input type="number" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes) }}" min="1" max="1440">
-                            </label>
-                            <label>
-                                1st position gift
-                                <input name="first_prize" value="{{ old('first_prize', $exam->first_prize) }}" placeholder="Example: Trophy + certificate">
-                            </label>
-                            <label>
-                                2nd position gift
-                                <input name="second_prize" value="{{ old('second_prize', $exam->second_prize) }}" placeholder="Example: Medal">
-                            </label>
-                            <label>
-                                3rd position gift
-                                <input name="third_prize" value="{{ old('third_prize', $exam->third_prize) }}" placeholder="Example: Gift box">
-                            </label>
-                            <label>
-                                Class
-                                <select class="js-exam-class" name="academic_class_id">
-                                    <option value="">Select class</option>
-                                    @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}" @selected((string) $exam->academic_class_id === (string) $class->id)>{{ $class->name }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                            <label>
-                                Subject
-                                <select class="js-exam-subject" name="subject_id">
-                                    <option value="">Select subject</option>
-                                    @foreach ($subjects as $subject)
-                                        <option value="{{ $subject->id }}" @selected((string) $exam->subject_id === (string) $subject->id)>{{ $subject->name }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                            <label>
-                                Oddhay / Chapter
-                                <select class="js-exam-chapter" name="chapter_id" data-selected-chapter="{{ old('chapter_id', $exam->chapter_id) }}" disabled>
-                                    <option value="">Select class and subject first</option>
-                                </select>
-                            </label>
-                            <label>
-                                Question selection
-                                <select class="js-question-selection-mode" name="question_selection_mode">
-                                    <option value="manual" @selected(old('question_selection_mode', 'manual') === 'manual')>Select manually</option>
-                                    <option value="random" @selected(old('question_selection_mode') === 'random')>Random questions</option>
-                                </select>
-                            </label>
-                            <label class="js-random-question-count-field">
-                                Random question count
-                                <input class="js-random-question-count" type="number" name="random_question_count" value="{{ old('random_question_count', $exam->questions_count) }}" min="1" max="500">
-                            </label>
-                            <label>
-                                Questions
-                                <select class="js-exam-questions" name="question_ids[]" multiple size="8">
-                                    @foreach ($questions as $question)
-                                        <option
-                                            value="{{ $question->id }}"
-                                            data-class-id="{{ $question->academic_class_id }}"
-                                            data-subject-id="{{ $question->subject_id }}"
-                                            data-chapter-id="{{ $question->chapter_id }}"
-                                            data-class="{{ $question->academicClass->name ?? '' }}"
-                                            data-subject="{{ $question->subject->name ?? '' }}"
-                                            data-chapter="{{ $question->chapter->display_name ?? '' }}"
-                                            @selected($exam->questions->contains($question))
-                                        >
-                                            {{ $question->question_text }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </label>
-                            <div class="modal-actions">
-                                <button class="button secondary js-close-modal" type="button" data-modal-close="edit-exam-{{ $exam->id }}">Cancel</button>
-                                <button type="submit">Update exam</button>
-                            </div>
-                        </form>
+                        <button class="button secondary small js-close-modal" type="button" data-modal-close="edit-exam">Close</button>
                     </div>
+
+                    <form class="stack js-exam-form" method="POST" action="">
+                        @csrf
+                        @method('PATCH')
+                        <label>
+                            Title
+                            <input name="title" placeholder="Write exam title">
+                        </label>
+                        <label>
+                            Start date
+                            <input type="date" name="starts_at">
+                        </label>
+                        <label>
+                            Deadline
+                            <input type="date" name="ends_at">
+                        </label>
+                        <label>
+                            Duration (minutes)
+                            <input type="number" name="duration_minutes" min="1" max="1440">
+                        </label>
+                        <label>
+                            1st position gift
+                            <input name="first_prize" placeholder="Example: Trophy + certificate">
+                        </label>
+                        <label>
+                            2nd position gift
+                            <input name="second_prize" placeholder="Example: Medal">
+                        </label>
+                        <label>
+                            3rd position gift
+                            <input name="third_prize" placeholder="Example: Gift box">
+                        </label>
+                        <label>
+                            Class
+                            <select class="js-exam-class" name="academic_class_id">
+                                <option value="">Select class</option>
+                                @foreach ($classes as $class)
+                                    <option value="{{ $class->id }}">{{ $class->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Subject
+                            <select class="js-exam-subject" name="subject_id">
+                                <option value="">Select subject</option>
+                                @foreach ($subjects as $subject)
+                                    <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Oddhay / Chapter
+                            <select class="js-exam-chapter" name="chapter_id" disabled>
+                                <option value="">Select class and subject first</option>
+                            </select>
+                        </label>
+                        <label>
+                            Question selection
+                            <select class="js-question-selection-mode" name="question_selection_mode">
+                                <option value="manual">Select manually</option>
+                                <option value="random">Random questions</option>
+                            </select>
+                        </label>
+                        <label class="js-random-question-count-field">
+                            Random question count
+                            <input class="js-random-question-count" type="number" name="random_question_count" min="1" max="500">
+                        </label>
+                        <label>
+                            Questions
+                            <select class="js-exam-questions" name="question_ids[]" multiple size="8">
+                                <option value="">Select class, subject, and chapter first</option>
+                            </select>
+                        </label>
+                        <div class="modal-actions">
+                            <button class="button secondary js-close-modal" type="button" data-modal-close="edit-exam">Cancel</button>
+                            <button type="submit">Update exam</button>
+                        </div>
+                    </form>
                 </div>
-            @endforeach
+            </div>
         </div>
     </div>
 @endsection
@@ -379,11 +352,8 @@
                     });
                 }
 
-                const $class = $('#exam-class');
-                const $subject = $('#exam-subject');
-                const $chapter = $('#exam-chapter');
-                const $questions = $('#exam-questions');
                 const chapterOptionsUrl = @json(route('admin.academic.chapters.options'));
+                const questionOptionsUrl = @json(route('admin.exams.questions.options'));
 
                 function setChapterPlaceholder($chapterField, text) {
                     $chapterField.empty().append($('<option>', {
@@ -392,17 +362,55 @@
                     }));
                 }
 
-                function loadChapterOptions($form) {
+                function setQuestionsPlaceholder($questionsField, text) {
+                    $questionsField.empty().append($('<option>', {
+                        value: '',
+                        text,
+                        disabled: true,
+                    }));
+                }
+
+                function filterSubjectOptions($form) {
+                    const $classField = $form.find('.js-exam-class, #exam-class');
+                    const $subjectField = $form.find('.js-exam-subject, #exam-subject');
+                    const selectedClass = String($classField.val() || '');
+                    let selectedOptionVisible = false;
+
+                    $subjectField.find('option').each(function () {
+                        const $option = $(this);
+
+                        if (! $option.val()) {
+                            $option.prop('hidden', false);
+                            return;
+                        }
+
+                        const optionClasses = String($option.data('class-ids') || '').split(',').filter(Boolean);
+                        const isVisible = optionClasses.includes(selectedClass);
+                        $option.prop('hidden', ! isVisible);
+
+                        if ($option.is(':selected') && isVisible) {
+                            selectedOptionVisible = true;
+                        }
+                    });
+
+                    if (! selectedOptionVisible) {
+                        $subjectField.val('');
+                    }
+                }
+
+                function loadChapterOptions($form, selectedQuestionIds = []) {
+                    filterSubjectOptions($form);
                     const $classField = $form.find('.js-exam-class, #exam-class');
                     const $subjectField = $form.find('.js-exam-subject, #exam-subject');
                     const $chapterField = $form.find('.js-exam-chapter, #exam-chapter');
+                    const $questionsField = $form.find('.js-exam-questions, #exam-questions');
                     const selectedClass = $classField.val();
                     const selectedSubject = $subjectField.val();
 
                     if (! selectedClass || ! selectedSubject) {
                         setChapterPlaceholder($chapterField, 'Select class and subject first');
                         $chapterField.prop('disabled', true);
-                        filterQuestions($form);
+                        setQuestionsPlaceholder($questionsField, 'Select class, subject, and chapter first');
                         return;
                     }
 
@@ -433,36 +441,54 @@
                         }
 
                         $chapterField.prop('disabled', chapters.length === 0);
-                        filterQuestions($form);
+                        loadQuestionOptions($form, selectedQuestionIds);
                     }).fail(function () {
                         setChapterPlaceholder($chapterField, 'Could not load chapters');
                         $chapterField.prop('disabled', true);
-                        filterQuestions($form);
+                        setQuestionsPlaceholder($questionsField, 'Could not load questions');
                     });
                 }
 
-                function filterQuestions($form) {
+                function loadQuestionOptions($form, selectedQuestionIds = []) {
                     const $classField = $form.find('.js-exam-class, #exam-class');
                     const $subjectField = $form.find('.js-exam-subject, #exam-subject');
                     const $chapterField = $form.find('.js-exam-chapter, #exam-chapter');
                     const $questionsField = $form.find('.js-exam-questions, #exam-questions');
-                    const selectedClass = String($classField.val() || '');
-                    const selectedSubject = String($subjectField.val() || '');
-                    const selectedChapter = String($chapterField.val() || '');
-                    const hasFullSelection = selectedClass && selectedSubject && selectedChapter;
+                    const selectedClass = $classField.val();
+                    const selectedSubject = $subjectField.val();
+                    const selectedChapter = $chapterField.val();
+                    const selectedIds = (selectedQuestionIds || []).map(String);
 
-                    $questionsField.find('option').each(function () {
-                        const $option = $(this);
-                        const matches = hasFullSelection
-                            && String($option.data('class-id') || '') === selectedClass
-                            && String($option.data('subject-id') || '') === selectedSubject
-                            && String($option.data('chapter-id') || '') === selectedChapter;
+                    if (! selectedClass || ! selectedSubject || ! selectedChapter) {
+                        setQuestionsPlaceholder($questionsField, 'Select class, subject, and chapter first');
+                        return;
+                    }
 
-                        $option.prop('hidden', ! matches);
-                        $option.prop('disabled', ! matches);
-                        if (! matches) {
-                            $option.prop('selected', false);
+                    setQuestionsPlaceholder($questionsField, 'Loading questions...');
+
+                    $.getJSON(questionOptionsUrl, {
+                        academic_class_id: selectedClass,
+                        subject_id: selectedSubject,
+                        chapter_id: selectedChapter,
+                    }).done(function (response) {
+                        const questions = response.questions || [];
+
+                        $questionsField.empty();
+
+                        if (! questions.length) {
+                            setQuestionsPlaceholder($questionsField, 'No question found');
+                            return;
                         }
+
+                        questions.forEach(function (question) {
+                            $questionsField.append($('<option>', {
+                                value: question.id,
+                                text: question.text,
+                                selected: selectedIds.includes(String(question.id)),
+                            }));
+                        });
+                    }).fail(function () {
+                        setQuestionsPlaceholder($questionsField, 'Could not load questions');
                     });
                 }
 
@@ -491,19 +517,55 @@
 
                 $(document).on('change', '.js-exam-class, #exam-class, .js-exam-subject, #exam-subject', function () {
                     const $form = $(this).closest('form');
+                    if ($(this).is('.js-exam-class, #exam-class')) {
+                        filterSubjectOptions($form);
+                    }
                     $form.find('.js-exam-chapter, #exam-chapter').data('selected-chapter', '');
                     loadChapterOptions($form);
                 });
 
                 $(document).on('change', '.js-exam-chapter, #exam-chapter', function () {
                     $(this).data('selected-chapter', $(this).val());
-                    filterQuestions($(this).closest('form'));
+                    loadQuestionOptions($(this).closest('form'));
                 });
 
                 $(document).on('click', '.js-edit-exam', function (event) {
                     event.preventDefault();
                     const modalId = $(this).data('modal-target');
                     const $modal = $('#' + modalId);
+
+                    if (modalId === 'edit-exam') {
+                        const editUrl = $(this).data('edit-url');
+                        const $form = $modal.find('form');
+
+                        $('#edit-exam-title').text('Loading...');
+                        $form.find('input[name="title"], input[name="starts_at"], input[name="ends_at"], input[name="duration_minutes"], input[name="first_prize"], input[name="second_prize"], input[name="third_prize"]').val('');
+                        setChapterPlaceholder($form.find('.js-exam-chapter'), 'Select class and subject first');
+                        setQuestionsPlaceholder($form.find('.js-exam-questions'), 'Loading exam...');
+
+                        $.getJSON(editUrl).done(function (response) {
+                            const exam = response.exam || {};
+
+                            $('#edit-exam-title').text(exam.title || 'Edit Exam');
+                            $form.attr('action', exam.update_url || '');
+                            $form.find('[name="title"]').val(exam.title || '');
+                            $form.find('[name="starts_at"]').val(exam.starts_at || '');
+                            $form.find('[name="ends_at"]').val(exam.ends_at || '');
+                            $form.find('[name="duration_minutes"]').val(exam.duration_minutes || '');
+                            $form.find('[name="first_prize"]').val(exam.first_prize || '');
+                            $form.find('[name="second_prize"]').val(exam.second_prize || '');
+                            $form.find('[name="third_prize"]').val(exam.third_prize || '');
+                            $form.find('[name="academic_class_id"]').val(exam.academic_class_id || '');
+                            $form.find('[name="subject_id"]').val(exam.subject_id || '');
+                            $form.find('[name="chapter_id"]').data('selected-chapter', exam.chapter_id || '');
+                            $form.find('[name="question_selection_mode"]').val('manual');
+                            $form.find('[name="random_question_count"]').val(exam.questions_count || '');
+                            toggleQuestionSelectionMode($form);
+                            loadChapterOptions($form, exam.question_ids || []);
+                        }).fail(function () {
+                            $('#edit-exam-title').text('Could not load exam');
+                        });
+                    }
 
                     $modal.addClass('is-open').attr('aria-hidden', 'false');
                     $('body').addClass('modal-open');
@@ -534,4 +596,3 @@
         }
     </script>
 @endpush
-
