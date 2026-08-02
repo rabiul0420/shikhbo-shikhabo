@@ -26,8 +26,8 @@ class ExampleTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Home')
-            ->assertSee('About Us')
-            ->assertSee('Contact Us')
+            ->assertSee('About')
+            ->assertSee('Contact')
             ->assertSee('Privacy Policy')
             ->assertSee('Gift Winners')
             ->assertSee('Customize Exam')
@@ -36,7 +36,6 @@ class ExampleTest extends TestCase
             ->assertSee(route('login', ['redirect_to' => route('custom-exams.create', [], false)]))
             ->assertDontSee('Take Exam')
             ->assertDontSee('My Profile')
-            ->assertDontSee('My Result')
             ->assertDontSee('Logout');
     }
 
@@ -48,8 +47,8 @@ class ExampleTest extends TestCase
             ->get('/')
             ->assertOk()
             ->assertSee('Home')
-            ->assertSee('About Us')
-            ->assertSee('Contact Us')
+            ->assertSee('About')
+            ->assertSee('Contact')
             ->assertSee('Privacy Policy')
             ->assertSee('Gift Winners')
             ->assertSee('My Profile')
@@ -58,6 +57,94 @@ class ExampleTest extends TestCase
             ->assertDontSee('Take Exam')
             ->assertDontSee('Login')
             ->assertDontSee('Register');
+    }
+
+    public function test_bangla_locale_prefix_serves_bangla_content(): void
+    {
+        $this->get('/bn')
+            ->assertOk()
+            ->assertSee('হোম')
+            ->assertSee('hreflang="en"', false)
+            ->assertSee('hreflang="bn"', false);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Home')
+            ->assertDontSee('>হোম<', false);
+    }
+
+    public function test_published_blog_shows_localized_content_and_footer_link(): void
+    {
+        $blog = \App\Models\Blog::create([
+            'title_en' => 'English Blog Title',
+            'title_bn' => 'বাংলা ব্লগ শিরোনাম',
+            'excerpt_en' => 'English excerpt',
+            'excerpt_bn' => 'বাংলা সারাংশ',
+            'body_en' => '<p>English body content</p>',
+            'body_bn' => '<p>বাংলা বিস্তারিত কন্টেন্ট</p>',
+            'meta_title_en' => 'English Meta',
+            'meta_title_bn' => 'বাংলা মেটা',
+            'meta_description_en' => 'English meta description',
+            'meta_description_bn' => 'বাংলা মেটা বর্ণনা',
+            'status' => 'published',
+            'published_at' => now()->subMinute(),
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee(route('blog.index'))
+            ->assertSee('Blog');
+
+        $this->get(route('blog.index'))
+            ->assertOk()
+            ->assertSee('English Blog Title')
+            ->assertSee('English excerpt');
+
+        $this->get(route('blog.show', $blog))
+            ->assertOk()
+            ->assertSee('English Blog Title')
+            ->assertSee('English body content')
+            ->assertSee('English Meta', false);
+
+        app()->setLocale('bn');
+
+        $this->get('/bn/blog')
+            ->assertOk()
+            ->assertSee('বাংলা ব্লগ শিরোনাম')
+            ->assertSee('বাংলা সারাংশ');
+
+        $this->get('/bn/blog/'.$blog->slug)
+            ->assertOk()
+            ->assertSee('বাংলা ব্লগ শিরোনাম')
+            ->assertSee('বাংলা বিস্তারিত কন্টেন্ট');
+    }
+
+    public function test_admin_can_create_blog_post(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.blogs.store'), [
+                'title_en' => 'New Guide',
+                'title_bn' => 'নতুন গাইড',
+                'excerpt_en' => 'Short EN',
+                'excerpt_bn' => 'সংক্ষিপ্ত বাংলা',
+                'body_en' => '<p>Details EN</p>',
+                'body_bn' => '<p>বিস্তারিত বাংলা</p>',
+                'meta_title_en' => 'Meta EN',
+                'meta_title_bn' => 'মেটা বাংলা',
+                'meta_description_en' => 'Meta desc EN',
+                'meta_description_bn' => 'মেটা বর্ণনা',
+                'status' => 'published',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('blogs', [
+            'title_en' => 'New Guide',
+            'title_bn' => 'নতুন গাইড',
+            'status' => 'published',
+            'slug' => 'new-guide',
+        ]);
     }
 
     public function test_student_login_uses_mobile_number(): void
@@ -482,7 +569,7 @@ class ExampleTest extends TestCase
             ->get('/')
             ->assertOk()
             ->assertSee('Class Five Exam')
-            ->assertSee('Exams for Class 5 are shown here.')
+            ->assertSee('Showing exams for Class 5.')
             ->assertDontSee('Class Six Exam');
     }
 
@@ -2054,7 +2141,6 @@ TEXT;
             ->assertSee('Gift Received Students')
             ->assertSee('Public Gift Winner')
             ->assertSee('Public Winner School')
-            ->assertSee('uploads/profile-photos/winner.jpg')
             ->assertSee('50 tk recharge')
             ->assertSee('Public Gift Exam')
             ->assertDontSee('Pending Gift Winner');

@@ -69,6 +69,16 @@
                         <a class="admin-nav-link" href="{{ route('admin.users.create') }}">Add User</a>
                     </div>
                 </div>
+                <div class="admin-menu-group">
+                    <button class="admin-menu-toggle" type="button">
+                        Blog
+                        <span></span>
+                    </button>
+                    <div class="admin-submenu">
+                        <a class="admin-nav-link" href="{{ route('admin.blogs.index') }}">Blog List</a>
+                        <a class="admin-nav-link" href="{{ route('admin.blogs.create') }}">Add Blog</a>
+                    </div>
+                </div>
 
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
                 <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
