@@ -15,6 +15,7 @@ return [
         'admin' => 'Admin',
         'take_exam' => 'Take Exam',
         'menu' => 'Menu',
+        'blog' => 'Blog',
     ],
     'footer' => [
         'tagline' => 'Class-wise and subject-wise model tests for Bangladeshi students — practice online and see results instantly.',
@@ -28,6 +29,7 @@ return [
         'gift_winners' => 'Gift Winners',
         'company' => 'Company',
         'privacy' => 'Privacy Policy',
+        'blog' => 'Blog',
         'rights' => 'All rights reserved.',
         'made_for' => 'Made for BD students & model test practice',
     ],
@@ -170,5 +172,16 @@ return [
     ],
     'fix' => [
         'fix_errors' => 'Please fix these:',
+    ],
+    'blog' => [
+        'seo_index_title' => 'Blog | Study Tips & Model Test Guides | Shikhbo Shikhabo',
+        'seo_index_description' => 'Read study tips, exam guides, and education updates for Bangladeshi students on the Shikhbo Shikhabo blog.',
+        'seo_keywords' => 'Shikhbo Shikhabo blog, BD model test tips, exam guide, study tips Bangladesh, SSC HSC preparation',
+        'index_title' => 'Blog',
+        'index_text' => 'Guides, tips, and updates to help you practise smarter for BD model tests.',
+        'empty_title' => 'No posts yet',
+        'empty_text' => 'New articles will appear here soon.',
+        'related_eyebrow' => 'Keep reading',
+        'related_title' => 'Related posts',
     ],
 ];
