@@ -23,6 +23,8 @@ class Blog extends Model
         'meta_description_en',
         'meta_description_bn',
         'hero_image',
+        'custom_css',
+        'json_schema',
         'status',
         'published_at',
     ];
@@ -100,6 +102,46 @@ class Blog extends Model
         $meta = $this->localized('meta_title', $locale);
 
         return $meta !== '' ? $meta : $this->title($locale);
+    }
+
+    public function sanitizedCustomCss(): ?string
+    {
+        if (blank($this->custom_css)) {
+            return null;
+        }
+
+        $css = (string) $this->custom_css;
+        $css = preg_replace('/<\/style/i', '', $css) ?? $css;
+        $css = preg_replace('/<script/i', '', $css) ?? $css;
+        $css = trim($css);
+
+        return $css !== '' ? $css : null;
+    }
+
+    public function decodedJsonSchema(): ?array
+    {
+        if (blank($this->json_schema)) {
+            return null;
+        }
+
+        $decoded = json_decode($this->json_schema, true);
+
+        if (! is_array($decoded) || $decoded === []) {
+            return null;
+        }
+
+        if (array_is_list($decoded)) {
+            return [
+                '@context' => 'https://schema.org',
+                '@graph' => $decoded,
+            ];
+        }
+
+        if (! isset($decoded['@context'])) {
+            $decoded = ['@context' => 'https://schema.org'] + $decoded;
+        }
+
+        return $decoded;
     }
 
     public function metaDescription(?string $locale = null): string

@@ -90,6 +90,11 @@
         <script type="application/ld+json">
             {!! json_encode(['@context' => 'https://schema.org', '@graph' => $schemaGraph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
         </script>
+        @if (! empty($schemaCustom ?? null))
+            <script type="application/ld+json">
+                {!! json_encode($schemaCustom, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}
+            </script>
+        @endif
     @endif
     <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
