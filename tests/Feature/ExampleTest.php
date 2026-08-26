@@ -542,6 +542,18 @@ class ExampleTest extends TestCase
         $this->get('/about-us')->assertOk()->assertSee('About Us');
         $this->get('/contact-us')->assertOk()->assertSee('Contact Us');
         $this->get('/privacy-policy')->assertOk()->assertSee('Privacy Policy');
+        $this->get('/how-to-take-bd-model-test-online')
+            ->assertOk()
+            ->assertSee('How to Take a BD Model Test Online')
+            ->assertSee('How to Take a BD Model Test Online | Step-by-Step Guide')
+            ->assertSee('Step-by-step guide to take a BD model test online', false);
+        $this->get('/how-to-give-a-model-test')
+            ->assertRedirect('/how-to-take-bd-model-test-online');
+        $this->get('/bn/how-to-take-bd-model-test-online')
+            ->assertOk()
+            ->assertSee('অনলাইনে বিডি মডেল টেস্ট কীভাবে দিবেন');
+        $this->get('/bn/how-to-give-a-model-test')
+            ->assertRedirect('/bn/how-to-take-bd-model-test-online');
     }
 
     public function test_sitemap_includes_only_public_indexable_routes(): void
@@ -602,6 +614,8 @@ class ExampleTest extends TestCase
             ->assertSee(localized_route('home', [], 'bn'), false)
             ->assertSee(localized_route('exams.directory', [], 'en'), false)
             ->assertSee(localized_route('blog.index', [], 'en'), false)
+            ->assertSee(localized_route('how-to-take-bd-model-test-online', [], 'en'), false)
+            ->assertSee(localized_route('how-to-take-bd-model-test-online', [], 'bn'), false)
             ->assertSee(localized_route('about-us', [], 'en'), false)
             ->assertSee(localized_route('contact-us', [], 'en'), false)
             ->assertSee(localized_route('privacy-policy', [], 'en'), false)
@@ -941,19 +955,28 @@ class ExampleTest extends TestCase
             'ends_at' => now()->subDay(),
         ]);
 
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertSee('Running Exam')
-            ->assertSee('Upcoming Exam')
-            ->assertSee('Expired Exam')
-            ->assertSeeInOrder([
-                'Running Exam',
-                'Running Schedule Exam',
-                'Upcoming Exam',
-                'Upcoming Schedule Exam',
-                'Expired Exam',
-                'Expired Schedule Exam',
-            ]);
+        $response = $this->get(route('home'));
+        $response->assertOk()
+            ->assertSee('Available Model Test')
+            ->assertSee('Upcoming Model Test')
+            ->assertDontSee('>Expired Model Test<', false)
+            ->assertSee('Running Schedule Exam')
+            ->assertSee('Upcoming Schedule Exam')
+            ->assertSee('Expired Schedule Exam');
+
+        $html = $response->getContent();
+        $availablePos = strpos($html, 'id="status-running"');
+        $expiredExamPos = strpos($html, 'Expired Schedule Exam');
+        $upcomingPos = strpos($html, 'id="status-upcoming"');
+        $upcomingExamPos = strpos($html, 'Upcoming Schedule Exam');
+
+        $this->assertNotFalse($availablePos);
+        $this->assertNotFalse($expiredExamPos);
+        $this->assertNotFalse($upcomingPos);
+        $this->assertNotFalse($upcomingExamPos);
+        $this->assertTrue($availablePos < $expiredExamPos, 'Past-deadline exam should appear under Available');
+        $this->assertTrue($expiredExamPos < $upcomingPos, 'Available exams should appear before Upcoming section');
+        $this->assertTrue($upcomingPos < $upcomingExamPos);
     }
 
     public function test_student_cannot_submit_exam_outside_running_schedule(): void

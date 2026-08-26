@@ -1,6 +1,6 @@
-# Shikhbo Shikhabo Database Design
+# Bd ModelTest Database Design
 
-Shikhbo Shikhabo uses MySQL, Laravel migrations, and Eloquent models for exam questions and attempts.
+Bd ModelTest uses MySQL, Laravel migrations, and Eloquent models for exam questions and attempts.
 
 ## Connection
 

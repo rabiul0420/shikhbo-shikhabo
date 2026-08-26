@@ -19,7 +19,7 @@
             'image' => $blog->hero_image ? asset($blog->hero_image) : asset('logo.svg'),
             'author' => [
                 '@type' => 'Organization',
-                'name' => 'Shikhbo Shikhabo',
+                'name' => 'Bd ModelTest',
             ],
             'publisher' => ['@id' => url('/') . '#organization'],
             'isPartOf' => ['@id' => url('/') . '#website'],

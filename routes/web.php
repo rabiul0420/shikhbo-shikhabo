@@ -51,6 +51,7 @@ Route::get('/sitemap.xml', function () {
         ['name' => 'home', 'params' => [], 'priority' => '1.0', 'lastmod' => null],
         ['name' => 'exams.directory', 'params' => [], 'priority' => '0.9', 'lastmod' => null],
         ['name' => 'blog.index', 'params' => [], 'priority' => '0.8', 'lastmod' => null],
+        ['name' => 'how-to-take-bd-model-test-online', 'params' => [], 'priority' => '0.8', 'lastmod' => null],
         ['name' => 'about-us', 'params' => [], 'priority' => '0.7', 'lastmod' => null],
         ['name' => 'contact-us', 'params' => [], 'priority' => '0.7', 'lastmod' => null],
         ['name' => 'privacy-policy', 'params' => [], 'priority' => '0.5', 'lastmod' => null],
@@ -68,7 +69,6 @@ Route::get('/sitemap.xml', function () {
     )->merge(
         Exam::query()
             ->whereHas('questions')
-            ->where(fn ($query) => $query->whereNull('ends_at')->orWhereDate('ends_at', '>=', today()))
             ->latest('updated_at')
             ->get(['id', 'slug', 'updated_at'])
             ->map(fn (Exam $exam) => [
@@ -141,6 +141,8 @@ $localizedRoutes = function () {
             ->latest()
             ->get();
 
+        $exams = Exam::sortByChapter($exams);
+
         $examsByClass = $exams
             ->whereNotNull('academic_class_id')
             ->groupBy('academic_class_id');
@@ -178,6 +180,10 @@ $localizedRoutes = function () {
     Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
     Route::view('/about-us', 'pages.about-us')->name('about-us');
     Route::view('/contact-us', 'pages.contact-us')->name('contact-us');
+    Route::view('/how-to-take-bd-model-test-online', 'pages.how-to-take-bd-model-test-online')->name('how-to-take-bd-model-test-online');
+    Route::get('/how-to-give-a-model-test', function () {
+        return redirect()->route('how-to-take-bd-model-test-online', status: 301);
+    });
 
     Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
     Route::get('/blog/{blog}', [BlogController::class, 'show'])
