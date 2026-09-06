@@ -349,9 +349,8 @@
         $statusLabels = [
             'running' => __('site.home.running'),
             'upcoming' => __('site.home.upcoming'),
-            'expired' => __('site.home.expired'),
         ];
-        $examGroups = collect(['running', 'upcoming', 'expired'])
+        $examGroups = collect(['running', 'upcoming'])
             ->mapWithKeys(fn ($status) => [
                 $status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status),
             ]);

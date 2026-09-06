@@ -1,6 +1,6 @@
 @extends('layouts.app', [
-    'title' => 'About Shikhbo Shikhabo',
-    'description' => 'Learn about Shikhbo Shikhabo, an online learning and exam practice platform for students, teachers, coaching centers, and admins.',
+    'title' => 'About Bd ModelTest',
+    'description' => 'Learn about Bd ModelTest, an online learning and exam practice platform for students, teachers, coaching centers, and admins.',
     'canonical' => route('about-us'),
 ])
 
@@ -8,14 +8,14 @@
     <div class="page-head">
         <div>
             <h1>About Us</h1>
-            <p class="muted">Learn more about Shikhbo Shikhabo.</p>
+            <p class="muted">Learn more about Bd ModelTest.</p>
         </div>
     </div>
 
     <section class="panel content-panel">
-        <h2>Shikhbo Shikhabo</h2>
+        <h2>Bd ModelTest</h2>
         <p>
-            Shikhbo Shikhabo is an online learning and exam practice platform built to help students prepare chapter-wise,
+            Bd ModelTest is an online learning and exam practice platform built to help students prepare chapter-wise,
             subject-wise, and class-wise.
         </p>
         <p>
@@ -26,7 +26,7 @@
 
         <h2>Our Mission</h2>
         <p>
-            We believe regular practice helps students build confidence. Shikhbo Shikhabo is designed to make that practice
+            We believe regular practice helps students build confidence. Bd ModelTest is designed to make that practice
             easier by keeping learning materials organized and making exams available whenever students are ready to attempt
             them.
         </p>
@@ -52,7 +52,7 @@
         <h2>Why It Matters</h2>
         <p>
             Good exam preparation is not only about memorizing answers. It is about repeated practice, understanding weak
-            areas, and improving step by step. Shikhbo Shikhabo aims to support that habit with a simple digital system for
+            areas, and improving step by step. Bd ModelTest aims to support that habit with a simple digital system for
             practice and assessment.
         </p>
 

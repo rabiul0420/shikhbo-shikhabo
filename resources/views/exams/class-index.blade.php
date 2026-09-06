@@ -1,6 +1,6 @@
 @extends('layouts.app', [
     'title' => $academicClass->name . ' Exams',
-    'description' => 'All exams for ' . $academicClass->name . ' on Shikhbo Shikhabo.',
+    'description' => 'All exams for ' . $academicClass->name . ' on Bd ModelTest.',
     'canonical' => route('classes.exams.index', $academicClass),
 ])
 
@@ -217,19 +217,18 @@
 
 @section('content')
     @php
-        $examGroups = collect(['running', 'upcoming', 'expired'])
+        $examGroups = collect(['running', 'upcoming'])
             ->mapWithKeys(fn ($status) => [$status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status)]);
         $statusLabels = [
-            'running' => 'Running Exam',
-            'upcoming' => 'Upcoming Exam',
-            'expired' => 'Expired Exam',
+            'running' => __('site.home.running'),
+            'upcoming' => __('site.home.upcoming'),
         ];
     @endphp
 
     <section class="class-exam-head" aria-labelledby="class-exam-title">
         <div class="class-exam-head-copy">
             <h1 id="class-exam-title">{{ $academicClass->name }} Exams</h1>
-            <p>All running, upcoming, and expired exams for this class.</p>
+            <p>All available and upcoming model tests for this class.</p>
         </div>
         <a class="button secondary" href="{{ route('home') }}">Back home</a>
     </section>
@@ -242,6 +241,7 @@
     @else
         <div class="class-exam-list">
             @foreach ($examGroups as $status => $statusExams)
+                @continue($statusExams->isEmpty())
                 <section class="status-section" aria-labelledby="status-{{ $status }}">
                     <div class="status-section-head">
                         <div>
@@ -251,26 +251,20 @@
                         <span class="pill status-{{ $status }}">{{ $statusExams->count() }} {{ \Illuminate\Support\Str::plural('exam', $statusExams->count()) }}</span>
                     </div>
 
-                    @if ($statusExams->isEmpty())
-                        <section class="empty-exam-panel">
-                            <p class="muted">No {{ strtolower($statusLabels[$status]) }} available.</p>
-                        </section>
-                    @else
-                        <div class="exam-card-grid">
-                            @foreach ($statusExams as $exam)
-                                @php
-                                    $existingAttempt = auth()->check() && ! auth()->user()->is_admin
-                                        ? $exam->attempts->first()
-                                        : null;
-                                @endphp
-                                @include('exams.partials.card', [
-                                    'exam' => $exam,
-                                    'status' => $status,
-                                    'existingAttempt' => $existingAttempt,
-                                ])
-                            @endforeach
-                        </div>
-                    @endif
+                    <div class="exam-card-grid">
+                        @foreach ($statusExams as $exam)
+                            @php
+                                $existingAttempt = auth()->check() && ! auth()->user()->is_admin
+                                    ? $exam->attempts->first()
+                                    : null;
+                            @endphp
+                            @include('exams.partials.card', [
+                                'exam' => $exam,
+                                'status' => $status,
+                                'existingAttempt' => $existingAttempt,
+                            ])
+                        @endforeach
+                    </div>
                 </section>
             @endforeach
         </div>

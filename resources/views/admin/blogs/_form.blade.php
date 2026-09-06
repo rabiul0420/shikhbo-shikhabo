@@ -105,5 +105,15 @@
                 </label>
             </div>
         @endif
+        <label>
+            Custom CSS
+            <textarea name="custom_css" rows="10" class="code-input" spellcheck="false" placeholder=".blog-article h1 { color: #1d4ed8; }">{{ old('custom_css', $blog?->custom_css) }}</textarea>
+            <span class="muted" style="font-size: 0.9rem;">Optional. Loaded only on this public post.</span>
+        </label>
+        <label>
+            JSON schema (JSON-LD)
+            <textarea name="json_schema" rows="12" class="code-input" spellcheck="false" placeholder='{"@type": "FAQPage", "mainEntity": []}'>{{ old('json_schema', $blog?->json_schema) }}</textarea>
+            <span class="muted" style="font-size: 0.9rem;">Optional. Paste a JSON object or array. Output as extra structured data on the public page (in addition to the default BlogPosting schema).</span>
+        </label>
     </div>
 </section>

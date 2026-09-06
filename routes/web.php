@@ -31,85 +31,95 @@ Route::get('/robots.txt', function () {
         'Disallow: /my-profile',
         'Disallow: /my-results',
         'Disallow: /exam-attempts',
+        'Disallow: /custom-exams',
+        'Disallow: /custom-exam-attempts',
         'Disallow: /bn/login',
         'Disallow: /bn/register',
         'Disallow: /bn/my-profile',
         'Disallow: /bn/my-results',
         'Disallow: /bn/exam-attempts',
+        'Disallow: /bn/custom-exams',
+        'Disallow: /bn/custom-exam-attempts',
         '',
         'Sitemap: ' . url('/sitemap.xml'),
     ]), 200)->header('Content-Type', 'text/plain');
 })->name('robots');
 
 Route::get('/sitemap.xml', function () {
+    // Indexable guest pages only — never auth, admin, login/register, or private results.
     $publicUrls = collect([
-        ['name' => 'home', 'params' => [], 'priority' => '1.0'],
-        ['name' => 'exams.directory', 'params' => [], 'priority' => '0.9'],
-        ['name' => 'blog.index', 'params' => [], 'priority' => '0.8'],
-        ['name' => 'about-us', 'params' => [], 'priority' => '0.7'],
-        ['name' => 'contact-us', 'params' => [], 'priority' => '0.7'],
-        ['name' => 'privacy-policy', 'params' => [], 'priority' => '0.5'],
+        ['name' => 'home', 'params' => [], 'priority' => '1.0', 'lastmod' => null],
+        ['name' => 'exams.directory', 'params' => [], 'priority' => '0.9', 'lastmod' => null],
+        ['name' => 'blog.index', 'params' => [], 'priority' => '0.8', 'lastmod' => null],
+        ['name' => 'how-to-take-bd-model-test-online', 'params' => [], 'priority' => '0.8', 'lastmod' => null],
+        ['name' => 'about-us', 'params' => [], 'priority' => '0.7', 'lastmod' => null],
+        ['name' => 'contact-us', 'params' => [], 'priority' => '0.7', 'lastmod' => null],
+        ['name' => 'privacy-policy', 'params' => [], 'priority' => '0.5', 'lastmod' => null],
     ])->merge(
         AcademicClass::query()
+            ->whereHas('exams')
             ->orderBy('name')
             ->get()
             ->map(fn (AcademicClass $class) => [
                 'name' => 'classes.exams',
-                'params' => [$class->slug],
+                'params' => ['classSlug' => $class->slug],
                 'priority' => '0.6',
+                'lastmod' => $class->updated_at?->toAtomString(),
             ])
     )->merge(
         Exam::query()
-            ->withCount('questions')
             ->whereHas('questions')
-            ->where(fn ($query) => $query->whereNull('ends_at')->orWhereDate('ends_at', '>=', today()))
-            ->latest()
-            ->get()
+            ->latest('updated_at')
+            ->get(['id', 'slug', 'updated_at'])
             ->map(fn (Exam $exam) => [
                 'name' => 'exams.show',
-                'params' => [$exam->slug],
+                'params' => ['examSlug' => $exam->slug],
                 'priority' => '0.8',
+                'lastmod' => $exam->updated_at?->toAtomString(),
             ])
     )->merge(
         Blog::query()
             ->published()
             ->latest('published_at')
-            ->get()
+            ->get(['id', 'slug', 'published_at', 'updated_at'])
             ->map(fn (Blog $blog) => [
                 'name' => 'blog.show',
-                'params' => [$blog->slug],
+                'params' => ['blog' => $blog->slug],
                 'priority' => '0.7',
+                'lastmod' => ($blog->updated_at ?? $blog->published_at)?->toAtomString(),
             ])
     );
 
     $items = $publicUrls->flatMap(function (array $url) {
-        $en = localized_route($url['name'], $url['params'], 'en');
-        $bn = localized_route($url['name'], $url['params'], 'bn');
+        return collect(['en', 'bn'])->map(function (string $locale) use ($url) {
+            $lines = [
+                '  <url>',
+                '    <loc>'.e(localized_route($url['name'], $url['params'], $locale)).'</loc>',
+            ];
 
-        return collect([
-            ['loc' => $en, 'priority' => $url['priority'], 'en' => $en, 'bn' => $bn],
-            ['loc' => $bn, 'priority' => $url['priority'], 'en' => $en, 'bn' => $bn],
-        ]);
-    })->map(fn ($url) => implode('', [
-        '    <url>',
-        '<loc>' . e($url['loc']) . '</loc>',
-        '<xhtml:link rel="alternate" hreflang="en" href="' . e($url['en']) . '"/>',
-        '<xhtml:link rel="alternate" hreflang="bn" href="' . e($url['bn']) . '"/>',
-        '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($url['en']) . '"/>',
-        '<changefreq>weekly</changefreq>',
-        '<priority>' . e($url['priority']) . '</priority>',
-        '</url>',
-    ]))->implode("\n");
+            if ($url['lastmod']) {
+                $lines[] = '    <lastmod>'.e($url['lastmod']).'</lastmod>';
+            }
+
+            $lines[] = '    <changefreq>weekly</changefreq>';
+            $lines[] = '    <priority>'.e($url['priority']).'</priority>';
+            $lines[] = '  </url>';
+
+            return implode("\n", $lines);
+        });
+    })->implode("\n");
 
     $xml = implode("\n", [
         '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
-        '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
         $items,
         '</urlset>',
     ]);
 
-    return response($xml, 200)->header('Content-Type', 'application/xml');
+    return response($xml, 200, [
+        'Content-Type' => 'application/xml; charset=UTF-8',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
 })->name('sitemap');
 
 $localizedRoutes = function () {
@@ -130,6 +140,8 @@ $localizedRoutes = function () {
             })
             ->latest()
             ->get();
+
+        $exams = Exam::sortByChapter($exams);
 
         $examsByClass = $exams
             ->whereNotNull('academic_class_id')
@@ -168,6 +180,10 @@ $localizedRoutes = function () {
     Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
     Route::view('/about-us', 'pages.about-us')->name('about-us');
     Route::view('/contact-us', 'pages.contact-us')->name('contact-us');
+    Route::view('/how-to-take-bd-model-test-online', 'pages.how-to-take-bd-model-test-online')->name('how-to-take-bd-model-test-online');
+    Route::get('/how-to-give-a-model-test', function () {
+        return redirect()->route('how-to-take-bd-model-test-online', status: 301);
+    });
 
     Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
     Route::get('/blog/{blog}', [BlogController::class, 'show'])

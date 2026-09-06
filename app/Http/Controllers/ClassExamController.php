@@ -73,8 +73,10 @@ class ClassExamController extends Controller
             ->latest()
             ->get();
 
+        $exams = Exam::sortByChapter($exams);
+
         $status = $request->query('status');
-        if (in_array($status, ['running', 'upcoming', 'expired'], true)) {
+        if (in_array($status, ['running', 'upcoming'], true)) {
             $exams = $exams->filter(fn (Exam $exam) => $exam->scheduleStatus() === $status)->values();
         }
 

@@ -11,8 +11,8 @@
   gtag('config', 'G-LFJ2HP52SW');
 </script>
     @php
-        $siteName = 'Shikhbo Shikhabo';
-        $defaultDescription = 'Shikhbo Shikhabo helps students practise class-wise, subject-wise, and chapter-wise online exams with quick results.';
+        $siteName = 'Bd ModelTest';
+        $defaultDescription = 'Bd ModelTest helps students practise class-wise, subject-wise, and chapter-wise online exams with quick results.';
         $seoTitle = $title ?? $siteName;
         $fullTitle = str_contains($seoTitle, $siteName) ? $seoTitle : $seoTitle . ' | ' . $siteName;
         $seoDescription = $description ?? $defaultDescription;
@@ -99,6 +99,11 @@
         <script type="application/ld+json">
             {!! json_encode(['@context' => 'https://schema.org', '@graph' => $schemaGraph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
         </script>
+        @if (! empty($schemaCustom ?? null))
+            <script type="application/ld+json">
+                {!! json_encode($schemaCustom, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}
+            </script>
+        @endif
     @endif
     <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -501,7 +506,7 @@
         <div class="shell topbar-inner">
             <a class="brand" href="{{ route('home') }}">
                 <img class="brand-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                <span>Shikhbo Shikhabo</span>
+                <span>Bd ModelTest</span>
             </a>
             <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="{{ __('site.nav.menu') }}">
                 <span></span>
@@ -521,6 +526,7 @@
                 @else
                     <a class="{{ locale_route_is('home') ? 'is-active' : '' }}" href="{{ route('home') }}">{{ __('site.nav.home') }}</a>
                     <a class="{{ locale_route_is('exams.directory', 'classes.exams') ? 'is-active' : '' }}" href="{{ route('exams.directory') }}">{{ __('site.nav.exams') }}</a>
+                    <a class="{{ locale_route_is('how-to-take-bd-model-test-online') ? 'is-active' : '' }}" href="{{ route('how-to-take-bd-model-test-online') }}">{{ __('site.nav.how_to') }}</a>
                     <a class="{{ locale_route_is('about-us') ? 'is-active' : '' }}" href="{{ route('about-us') }}">{{ __('site.nav.about') }}</a>
                     <a class="{{ locale_route_is('contact-us') ? 'is-active' : '' }}" href="{{ route('contact-us') }}">{{ __('site.nav.contact') }}</a>
                     @auth
@@ -574,7 +580,7 @@
                 <div class="footer-brand">
                     <a class="brand" href="{{ route('home') }}">
                         <img class="brand-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                        <span>Shikhbo Shikhabo</span>
+                        <span>Bd ModelTest</span>
                     </a>
                     <p>{{ __('site.footer.tagline') }}</p>
                 </div>
@@ -583,6 +589,7 @@
                     <nav class="footer-links" aria-label="{{ __('site.footer.explore') }}">
                         <a href="{{ route('home') }}">{{ __('site.nav.home') }}</a>
                         <a href="{{ route('exams.directory') }}">{{ __('site.nav.exams') }}</a>
+                        <a href="{{ route('how-to-take-bd-model-test-online') }}">{{ __('site.nav.how_to') }}</a>
                         <a href="{{ route('home') }}#featured-exams">{{ __('site.footer.featured_exams') }}</a>
                         <a href="{{ route('home') }}#why-choose">{{ __('site.footer.why_us') }}</a>
                         <a href="{{ route('home') }}#faq">{{ __('site.footer.faq') }}</a>
@@ -617,7 +624,7 @@
                 </div>
             </div>
             <div class="shell footer-bottom">
-                <span class="footer-copy">&copy; {{ date('Y') }} Shikhbo Shikhabo. {{ __('site.footer.rights') }}</span>
+                <span class="footer-copy">&copy; {{ date('Y') }} Bd ModelTest. {{ __('site.footer.rights') }}</span>
                 <span class="footer-copy">{{ __('site.footer.made_for') }}</span>
             </div>
         </footer>

@@ -1,13 +1,13 @@
 @extends('layouts.app', [
     'title' => $exam->title . ' | ' . ($exam->academicClass->name ?? '') . ' Model Test',
-    'description' => $exam->title . ' — ' . ($exam->academicClass->name ?? '') . ', ' . ($exam->subject->name ?? '') . ', ' . ($exam->chapter->display_name ?? '') . '. Online BD model test practice on Shikhbo Shikhabo with schedule, duration, and instant results.',
+    'description' => $exam->title . ' — ' . ($exam->academicClass->name ?? '') . ', ' . ($exam->subject->name ?? '') . ', ' . ($exam->chapter->display_name ?? '') . '. Online BD model test practice on Bd ModelTest with schedule, duration, and instant results.',
     'keywords' => implode(', ', array_filter([
         $exam->title,
         ($exam->academicClass->name ?? null) . ' model test',
         ($exam->subject->name ?? null) . ' MCQ',
         'BD model test',
         'online exam practice',
-        'Shikhbo Shikhabo',
+        'Bd ModelTest',
     ])),
     'canonical' => route('exams.show', $exam->slug),
     'robots' => 'index, follow',

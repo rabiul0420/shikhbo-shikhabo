@@ -1,6 +1,6 @@
 @extends('layouts.app', [
     'title' => 'Privacy Policy',
-    'description' => 'Read how Shikhbo Shikhabo handles student account information, exam attempts, answers, scores, and learning records.',
+    'description' => 'Read how Bd ModelTest handles student account information, exam attempts, answers, scores, and learning records.',
     'canonical' => route('privacy-policy'),
 ])
 
@@ -8,14 +8,14 @@
     <div class="page-head">
         <div>
             <h1>Privacy Policy</h1>
-            <p class="muted">How Shikhbo Shikhabo handles learner information.</p>
+            <p class="muted">How Bd ModelTest handles learner information.</p>
         </div>
     </div>
 
     <section class="panel content-panel">
         <h2>Overview</h2>
         <p>
-            This Privacy Policy explains how Shikhbo Shikhabo collects, uses, and protects information when students,
+            This Privacy Policy explains how Bd ModelTest collects, uses, and protects information when students,
             teachers, and administrators use the platform. We aim to collect only the information needed to run exams,
             manage learning content, and show results securely.
         </p>
@@ -61,7 +61,7 @@
 
         <h2>Information Sharing</h2>
         <p>
-            Shikhbo Shikhabo does not sell student information. Information may be visible to authorized administrators who
+            Bd ModelTest does not sell student information. Information may be visible to authorized administrators who
             manage exams, questions, and results for the institution or organization using the platform.
         </p>
 
