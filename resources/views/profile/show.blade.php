@@ -5,7 +5,7 @@
         <div class="page-head">
             <div>
                 <h1>My Profile</h1>
-                <p class="muted">Your account information for Shikhbo Shikhabo.</p>
+                <p class="muted">Your account information for Bd ModelTest.</p>
             </div>
         </div>
 

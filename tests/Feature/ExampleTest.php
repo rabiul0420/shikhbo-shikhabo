@@ -136,6 +136,11 @@ class ExampleTest extends TestCase
                 'meta_description_en' => 'Meta desc EN',
                 'meta_description_bn' => 'মেটা বর্ণনা',
                 'status' => 'published',
+                'custom_css' => '.blog-article h1 { color: #1d4ed8; }',
+                'json_schema' => json_encode([
+                    '@type' => 'FAQPage',
+                    'mainEntity' => [],
+                ]),
             ])
             ->assertRedirect();
 
@@ -144,7 +149,63 @@ class ExampleTest extends TestCase
             'title_bn' => 'নতুন গাইড',
             'status' => 'published',
             'slug' => 'new-guide',
+            'custom_css' => '.blog-article h1 { color: #1d4ed8; }',
         ]);
+
+        $blog = \App\Models\Blog::query()->where('slug', 'new-guide')->first();
+        $this->assertNotNull($blog);
+        $this->assertSame('FAQPage', $blog->decodedJsonSchema()['@type']);
+    }
+
+    public function test_admin_blog_rejects_invalid_json_schema(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.blogs.create'))
+            ->post(route('admin.blogs.store'), [
+                'title_en' => 'Broken Schema',
+                'title_bn' => 'ভুল স্কিমা',
+                'body_en' => '<p>Details EN</p>',
+                'body_bn' => '<p>বিস্তারিত বাংলা</p>',
+                'status' => 'draft',
+                'json_schema' => '{not-json',
+            ])
+            ->assertRedirect(route('admin.blogs.create'))
+            ->assertSessionHasErrors('json_schema');
+    }
+
+    public function test_published_blog_renders_custom_css_and_json_schema(): void
+    {
+        $blog = \App\Models\Blog::create([
+            'title_en' => 'Styled Post',
+            'title_bn' => 'স্টাইল পোস্ট',
+            'body_en' => '<p>English body</p>',
+            'body_bn' => '<p>বাংলা বিস্তারিত</p>',
+            'status' => 'published',
+            'published_at' => now()->subMinute(),
+            'custom_css' => '.blog-article h1 { color: #dc2626; }',
+            'json_schema' => json_encode([
+                '@type' => 'FAQPage',
+                'mainEntity' => [
+                    [
+                        '@type' => 'Question',
+                        'name' => 'What is this?',
+                        'acceptedAnswer' => [
+                            '@type' => 'Answer',
+                            'text' => 'A test.',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->get(route('blog.show', $blog))
+            ->assertOk()
+            ->assertSee('id="blog-custom-css"', false)
+            ->assertSee('.blog-article h1 { color: #dc2626; }', false)
+            ->assertSee('"@type":"FAQPage"', false)
+            ->assertSee('What is this?', false);
     }
 
     public function test_student_login_uses_mobile_number(): void
@@ -481,6 +542,102 @@ class ExampleTest extends TestCase
         $this->get('/about-us')->assertOk()->assertSee('About Us');
         $this->get('/contact-us')->assertOk()->assertSee('Contact Us');
         $this->get('/privacy-policy')->assertOk()->assertSee('Privacy Policy');
+        $this->get('/how-to-take-bd-model-test-online')
+            ->assertOk()
+            ->assertSee('How to Take a BD Model Test Online')
+            ->assertSee('How to Take a BD Model Test Online | Step-by-Step Guide')
+            ->assertSee('Step-by-step guide to take a BD model test online', false);
+        $this->get('/how-to-give-a-model-test')
+            ->assertRedirect('/how-to-take-bd-model-test-online');
+        $this->get('/bn/how-to-take-bd-model-test-online')
+            ->assertOk()
+            ->assertSee('অনলাইনে বিডি মডেল টেস্ট কীভাবে দিবেন');
+        $this->get('/bn/how-to-give-a-model-test')
+            ->assertRedirect('/bn/how-to-take-bd-model-test-online');
+    }
+
+    public function test_sitemap_includes_only_public_indexable_routes(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $classWithExams = \App\Models\AcademicClass::create(['name' => 'Class 5']);
+        $emptyClass = \App\Models\AcademicClass::create(['name' => 'Empty Class']);
+        $subject = \App\Models\Subject::create(['name' => 'Bangla']);
+        $chapter = \App\Models\Chapter::create([
+            'academic_class_id' => $classWithExams->id,
+            'subject_id' => $subject->id,
+            'name' => 'Chapter 1',
+        ]);
+        $exam = \App\Models\Exam::create([
+            'created_by' => $admin->id,
+            'academic_class_id' => $classWithExams->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'title' => 'Sitemap Public Exam',
+            'starts_at' => today(),
+            'ends_at' => today()->addDay(),
+        ]);
+        $question = \App\Models\Question::create([
+            'academic_class_id' => $classWithExams->id,
+            'subject_id' => $subject->id,
+            'chapter_id' => $chapter->id,
+            'question_text' => 'Sitemap question?',
+            'type' => 'single_choice',
+            'marks' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $exam->questions()->attach($question);
+
+        $publishedBlog = \App\Models\Blog::create([
+            'title_en' => 'Published Sitemap Post',
+            'title_bn' => 'প্রকাশিত পোস্ট',
+            'body_en' => '<p>English</p>',
+            'body_bn' => '<p>বাংলা</p>',
+            'status' => 'published',
+            'published_at' => now()->subMinute(),
+        ]);
+        $draftBlog = \App\Models\Blog::create([
+            'title_en' => 'Draft Sitemap Post',
+            'title_bn' => 'খসড়া পোস্ট',
+            'body_en' => '<p>Draft EN</p>',
+            'body_bn' => '<p>খসড়া</p>',
+            'status' => 'draft',
+        ]);
+
+        $response = $this->get('/sitemap.xml');
+        $response->assertOk();
+        $this->assertStringContainsString('application/xml', $response->headers->get('Content-Type'));
+
+        $xml = $response->getContent();
+
+        $response->assertSee(localized_route('home', [], 'en'), false)
+            ->assertSee(localized_route('home', [], 'bn'), false)
+            ->assertSee(localized_route('exams.directory', [], 'en'), false)
+            ->assertSee(localized_route('blog.index', [], 'en'), false)
+            ->assertSee(localized_route('how-to-take-bd-model-test-online', [], 'en'), false)
+            ->assertSee(localized_route('how-to-take-bd-model-test-online', [], 'bn'), false)
+            ->assertSee(localized_route('about-us', [], 'en'), false)
+            ->assertSee(localized_route('contact-us', [], 'en'), false)
+            ->assertSee(localized_route('privacy-policy', [], 'en'), false)
+            ->assertSee(localized_route('classes.exams', ['classSlug' => $classWithExams->slug], 'en'), false)
+            ->assertSee(localized_route('exams.show', ['examSlug' => $exam->slug], 'en'), false)
+            ->assertSee(localized_route('blog.show', ['blog' => $publishedBlog->slug], 'en'), false)
+            ->assertSee('<?xml version="1.0" encoding="UTF-8"?>', false)
+            ->assertSee('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', false)
+            ->assertSee('<loc>', false)
+            ->assertSee('</urlset>', false)
+            ->assertDontSee('xmlns:xhtml', false)
+            ->assertDontSee('xhtml:link', false);
+
+        $this->assertStringNotContainsString(localized_route('classes.exams', ['classSlug' => $emptyClass->slug], 'en'), $xml);
+        $this->assertStringNotContainsString($draftBlog->slug, $xml);
+        $this->assertStringNotContainsString('/login', $xml);
+        $this->assertStringNotContainsString('/register', $xml);
+        $this->assertStringNotContainsString('/admin', $xml);
+        $this->assertStringNotContainsString('/my-profile', $xml);
+        $this->assertStringNotContainsString('/my-results', $xml);
+        $this->assertStringNotContainsString('/custom-exams', $xml);
+        $this->assertStringNotContainsString('/exam-attempts', $xml);
     }
 
     public function test_admin_can_create_exam_with_random_question_count(): void
@@ -798,19 +955,28 @@ class ExampleTest extends TestCase
             'ends_at' => now()->subDay(),
         ]);
 
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertSee('Running Exam')
-            ->assertSee('Upcoming Exam')
-            ->assertSee('Expired Exam')
-            ->assertSeeInOrder([
-                'Running Exam',
-                'Running Schedule Exam',
-                'Upcoming Exam',
-                'Upcoming Schedule Exam',
-                'Expired Exam',
-                'Expired Schedule Exam',
-            ]);
+        $response = $this->get(route('home'));
+        $response->assertOk()
+            ->assertSee('Available Model Test')
+            ->assertSee('Upcoming Model Test')
+            ->assertDontSee('>Expired Model Test<', false)
+            ->assertSee('Running Schedule Exam')
+            ->assertSee('Upcoming Schedule Exam')
+            ->assertSee('Expired Schedule Exam');
+
+        $html = $response->getContent();
+        $availablePos = strpos($html, 'id="status-running"');
+        $expiredExamPos = strpos($html, 'Expired Schedule Exam');
+        $upcomingPos = strpos($html, 'id="status-upcoming"');
+        $upcomingExamPos = strpos($html, 'Upcoming Schedule Exam');
+
+        $this->assertNotFalse($availablePos);
+        $this->assertNotFalse($expiredExamPos);
+        $this->assertNotFalse($upcomingPos);
+        $this->assertNotFalse($upcomingExamPos);
+        $this->assertTrue($availablePos < $expiredExamPos, 'Past-deadline exam should appear under Available');
+        $this->assertTrue($expiredExamPos < $upcomingPos, 'Available exams should appear before Upcoming section');
+        $this->assertTrue($upcomingPos < $upcomingExamPos);
     }
 
     public function test_student_cannot_submit_exam_outside_running_schedule(): void

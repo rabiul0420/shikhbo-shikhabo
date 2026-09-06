@@ -19,13 +19,17 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         School::query()
-            ->where('title', 'Shikhbo Shikhabo')
+            ->where('title', 'Shikhbo Shikhabo School')
+            ->update(['title' => 'Bd ModelTest School']);
+
+        School::query()
+            ->whereIn('title', ['Shikhbo Shikhabo', 'Bd ModelTest'])
             ->whereNull('address')
             ->delete();
 
         foreach ([
             [
-                'title' => 'Shikhbo Shikhabo School',
+                'title' => 'Bd ModelTest School',
                 'address' => 'Mirpur, Dhaka',
                 'status' => 'active',
             ],
@@ -57,7 +61,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $defaultSchoolId = School::query()
-            ->where('title', 'Shikhbo Shikhabo School')
+            ->where('title', 'Bd ModelTest School')
             ->value('id');
 
         User::updateOrCreate(

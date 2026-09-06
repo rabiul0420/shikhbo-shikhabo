@@ -11,6 +11,11 @@
             .blog-form-grid { grid-template-columns: 1fr; }
         }
         .tox-tinymce { border-radius: 12px !important; }
+        .code-input {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.9rem;
+            min-height: 180px;
+        }
     </style>
 @endpush
 

@@ -98,14 +98,14 @@
         }
 
         .home-hero h1 {
-            max-width: 18ch;
-            font-size: clamp(28px, 4.4vw, 42px);
-            line-height: 1.25;
+            max-width: 16em;
+            font-size: clamp(26px, 4.2vw, 40px);
+            line-height: 1.2;
             color: #fff;
         }
 
         .home-hero p {
-            max-width: 42ch;
+            max-width: 48ch;
             margin: 0;
             color: rgba(255, 255, 255, .86);
             font-size: 16px;
@@ -940,12 +940,11 @@
 
 @section('content')
     @php
-        $examGroups = collect(['running', 'upcoming', 'expired'])
+        $examGroups = collect(['running', 'upcoming'])
             ->mapWithKeys(fn ($status) => [$status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status)]);
         $statusLabels = [
             'running' => __('site.home.running'),
             'upcoming' => __('site.home.upcoming'),
-            'expired' => __('site.home.expired'),
         ];
         $featuredStatuses = ['running', 'upcoming'];
         $whyNumbers = app()->getLocale() === 'bn'
@@ -961,7 +960,7 @@
             <div class="home-hero-copy">
                 <div class="home-brand-mark">
                     <img src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                    <strong>Shikhbo Shikhabo</strong>
+                    <strong>Bd ModelTest</strong>
                 </div>
                 <h1 id="home-hero-title">{{ __('site.home.hero_title') }}</h1>
                 <p>{{ __('site.home.hero_text') }}</p>
@@ -1106,6 +1105,7 @@
                 <div class="class-exam-list">
                     @foreach ($featuredStatuses as $status)
                         @php $statusExams = $examGroups[$status]; @endphp
+                        @continue($statusExams->isEmpty() && $status !== 'running')
                         <section class="status-section" aria-labelledby="status-{{ $status }}">
                             <div class="status-section-head">
                                 <div>
@@ -1133,30 +1133,6 @@
                             @endif
                         </section>
                     @endforeach
-
-                    @php $expiredExams = $examGroups['expired']; @endphp
-                    @if ($expiredExams->isNotEmpty())
-                        <section class="status-section" aria-labelledby="status-expired">
-                            <div class="status-section-head">
-                                <div>
-                                    <span class="eyebrow">{{ $statusLabels['expired'] }}</span>
-                                    <h2 id="status-expired">{{ $statusLabels['expired'] }}</h2>
-                                </div>
-                                <span class="pill status-expired">{{ __('site.home.exam_count', ['count' => $expiredExams->count()]) }}</span>
-                            </div>
-                            @foreach ($expiredExams->groupBy(fn ($exam) => $exam->academic_class_id ?? 0) as $classId => $classExams)
-                                @include('partials.exam-class-section', [
-                                    'status' => 'expired',
-                                    'classId' => $classId ?: null,
-                                    'academicClass' => $classExams->first()->academicClass,
-                                    'className' => $classExams->first()->academicClass->name ?? 'Unassigned Class',
-                                    'classExams' => $classExams,
-                                    'limit' => 3,
-                                ])
-                            @endforeach
-                        </section>
-
-                    @endif
                 </div>
             @endif
 

@@ -104,9 +104,31 @@ class AdminBlogController extends Controller
             'meta_description_bn' => ['nullable', 'string', 'max:500'],
             'hero_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'remove_hero_image' => ['nullable', 'boolean'],
+            'custom_css' => ['nullable', 'string'],
+            'json_schema' => [
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_string($value) || trim($value) === '') {
+                        return;
+                    }
+
+                    $decoded = json_decode($value, true);
+
+                    if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+                        $fail('JSON schema must be valid JSON (object or array).');
+                    }
+                },
+            ],
             'status' => ['required', Rule::in(Blog::STATUSES)],
             'published_at' => ['nullable', 'date'],
         ]);
+
+        foreach (['custom_css', 'json_schema'] as $field) {
+            if (isset($data[$field]) && trim((string) $data[$field]) === '') {
+                $data[$field] = null;
+            }
+        }
 
         if (blank($data['slug'] ?? null)) {
             unset($data['slug']);

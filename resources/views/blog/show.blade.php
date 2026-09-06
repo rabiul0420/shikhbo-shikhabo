@@ -5,6 +5,7 @@
     'canonical' => route('blog.show', $blog),
     'image' => $blog->hero_image ? asset($blog->hero_image) : null,
     'robots' => 'index, follow',
+    'schemaCustom' => $blog->decodedJsonSchema(),
     'schemaExtra' => [
         [
             '@type' => 'BlogPosting',
@@ -18,7 +19,7 @@
             'image' => $blog->hero_image ? asset($blog->hero_image) : asset('logo.svg'),
             'author' => [
                 '@type' => 'Organization',
-                'name' => 'Shikhbo Shikhabo',
+                'name' => 'Bd ModelTest',
             ],
             'publisher' => ['@id' => url('/') . '#organization'],
             'isPartOf' => ['@id' => url('/') . '#website'],
@@ -112,6 +113,9 @@
             .blog-related-grid { grid-template-columns: 1fr; }
         }
     </style>
+    @if ($customCss = $blog->sanitizedCustomCss())
+        <style id="blog-custom-css">{!! $customCss !!}</style>
+    @endif
 @endpush
 
 @section('content')

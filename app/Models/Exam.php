@@ -85,16 +85,34 @@ class Exam extends Model
             return 'upcoming';
         }
 
-        if ($this->ends_at && $this->ends_at->lt($today)) {
-            return 'expired';
-        }
-
+        // Past deadline still counts as available so students can practise.
         return 'running';
     }
 
     public function isRunning(): bool
     {
         return $this->scheduleStatus() === 'running';
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, self>  $exams
+     * @return \Illuminate\Support\Collection<int, self>
+     */
+    public static function sortByChapter($exams)
+    {
+        return $exams->sortBy(function (self $exam) {
+            $chapterNo = (string) ($exam->chapter?->chapter_no ?? '');
+            $chapterDigits = preg_replace('/\D+/', '', $chapterNo) ?: '999999';
+
+            return sprintf(
+                '%s|%06d|%s|%s|%s',
+                mb_strtolower($exam->subject?->name ?? ''),
+                (int) $chapterDigits,
+                mb_strtolower($chapterNo),
+                mb_strtolower($exam->chapter?->name ?? ''),
+                mb_strtolower($exam->title)
+            );
+        })->values();
     }
 
     public function prizeForPosition(int $position): ?string

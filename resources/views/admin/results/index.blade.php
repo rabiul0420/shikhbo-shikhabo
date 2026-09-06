@@ -10,7 +10,7 @@
             <div class="admin-brand">
                 <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
                 <div>
-                    <h2>Shikhbo Shikhabo Admin</h2>
+                    <h2>Bd ModelTest Admin</h2>
                     <p>{{ auth()->user()->name }}</p>
                 </div>
             </div>

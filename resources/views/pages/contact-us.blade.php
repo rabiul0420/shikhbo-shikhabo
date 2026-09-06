@@ -1,6 +1,6 @@
 @extends('layouts.app', [
-    'title' => 'Contact Shikhbo Shikhabo',
-    'description' => 'Contact Shikhbo Shikhabo for student exam support, account help, admin assistance, and online exam platform setup questions.',
+    'title' => 'Contact Bd ModelTest',
+    'description' => 'Contact Bd ModelTest for student exam support, account help, admin assistance, and online exam platform setup questions.',
     'canonical' => route('contact-us'),
 ])
 
@@ -71,7 +71,7 @@
     <div class="page-head">
         <div>
             <h1>Contact Us</h1>
-            <p class="muted">Reach out to the Shikhbo Shikhabo team for learning, exam, account, or admin support.</p>
+            <p class="muted">Reach out to the Bd ModelTest team for learning, exam, account, or admin support.</p>
         </div>
     </div>
 
@@ -113,7 +113,7 @@
 
         <section class="contact-map" aria-label="Google map location">
             <iframe
-                title="Shikhbo Shikhabo location on Google Maps"
+                title="Bd ModelTest location on Google Maps"
                 loading="lazy"
                 allowfullscreen
                 referrerpolicy="no-referrer-when-downgrade"
