@@ -2,6 +2,10 @@
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+    <style>
+        .filter-row { margin-bottom: 12px; }
+        .filter-row select { width: min(240px, 100%); }
+    </style>
 @endpush
 
 @section('content')
@@ -104,6 +108,21 @@
                         <span class="count-badge">{{ $examCount }}</span>
                         <button class="js-edit-exam" type="button" data-modal-target="add-exam">Add Exam</button>
                     </div>
+                </div>
+
+                <div class="row filter-row">
+                    <select id="filter-class" aria-label="Filter by class">
+                        <option value="">All classes</option>
+                        @foreach ($classes as $class)
+                            <option value="{{ $class->id }}">{{ $class->name }}</option>
+                        @endforeach
+                    </select>
+                    <select id="filter-subject" aria-label="Filter by subject">
+                        <option value="">All subjects</option>
+                        @foreach ($subjects as $subject)
+                            <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="table-wrap">
@@ -327,10 +346,16 @@
                 });
 
                 if ($.fn.DataTable && $('#exams-table').length) {
-                    $('#exams-table').DataTable({
+                    const examsTable = $('#exams-table').DataTable({
                         processing: true,
                         serverSide: true,
-                        ajax: @json(route('admin.exams.data')),
+                        ajax: {
+                            url: @json(route('admin.exams.data')),
+                            data: function (d) {
+                                d.class_id = $('#filter-class').val();
+                                d.subject_id = $('#filter-subject').val();
+                            },
+                        },
                         pageLength: 10,
                         lengthMenu: [5, 10, 25, 50],
                         order: [[0, 'asc']],
@@ -349,6 +374,41 @@
                             { orderable: false, searchable: false, targets: -1 },
                             { orderable: false, targets: 6 },
                         ],
+                    });
+
+                    function filterSubjectOptionsByClass() {
+                        const selectedClass = String($('#filter-class').val() || '');
+                        let subjectOptionVisible = false;
+
+                        $('#filter-subject option').each(function () {
+                            const $option = $(this);
+
+                            if (! $option.val()) {
+                                $option.prop('hidden', false);
+                                return;
+                            }
+
+                            const optionClasses = String($option.data('class-ids') || '').split(',').filter(Boolean);
+                            const isVisible = optionClasses.includes(selectedClass);
+                            $option.prop('hidden', ! isVisible);
+
+                            if ($option.is(':selected') && isVisible) {
+                                subjectOptionVisible = true;
+                            }
+                        });
+
+                        if (! subjectOptionVisible) {
+                            $('#filter-subject').val('');
+                        }
+                    }
+
+                    $('#filter-class').on('change', function () {
+                        filterSubjectOptionsByClass();
+                        examsTable.ajax.reload(null, false);
+                    });
+
+                    $('#filter-subject').on('change', function () {
+                        examsTable.ajax.reload(null, false);
                     });
                 }
 

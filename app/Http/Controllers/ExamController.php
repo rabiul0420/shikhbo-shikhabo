@@ -42,6 +42,8 @@ class ExamController extends Controller
         ];
 
         $search = trim((string) $request->input('search.value', ''));
+        $classId = (int) $request->input('class_id', 0) ?: null;
+        $subjectId = (int) $request->input('subject_id', 0) ?: null;
         $start = max((int) $request->input('start', 0), 0);
         $length = (int) $request->input('length', 10);
         $length = $length === -1 ? 100 : min(max($length, 1), 100);
@@ -67,7 +69,9 @@ class ExamController extends Controller
                         ->orWhereHas('subject', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('chapter', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
                 });
-            });
+            })
+            ->when($classId, fn (Builder $query) => $query->where('academic_class_id', $classId))
+            ->when($subjectId, fn (Builder $query) => $query->where('subject_id', $subjectId));
 
         $filtered = (clone $filteredQuery)->count();
 
