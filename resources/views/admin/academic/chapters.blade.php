@@ -2,6 +2,11 @@
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+    <style>
+        .table-filters { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+        .table-filter-field { min-width: 190px; }
+        .table-filter-field select { width: 100%; min-height: 38px; padding: 6px 10px; }
+    </style>
 @endpush
 
 @section('content')
@@ -25,6 +30,27 @@
                         <span class="eyebrow">List</span>
                         <h2>Oddhay / Chapter List</h2>
                     </div>
+                </div>
+
+                <div class="table-filters">
+                    <label class="table-filter-field">
+                        Class
+                        <select id="filter-chapters-class">
+                            <option value="">All classes</option>
+                            @foreach ($classes as $class)
+                                <option value="{{ $class->id }}" data-class-name="{{ $class->name }}">{{ $class->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="table-filter-field">
+                        Subject
+                        <select id="filter-chapters-subject">
+                            <option value="">All subjects</option>
+                            @foreach ($subjects as $subject)
+                                <option value="{{ $subject->name }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
                 </div>
 
                 <div class="table-wrap">
@@ -195,6 +221,57 @@
             };
 
             classSelect.addEventListener('change', filterSubjects);
+            filterSubjects();
+        });
+    </script>
+
+    <script>
+        $(function () {
+            if (!$.fn.DataTable || !$('#chapters-table').length) {
+                return;
+            }
+
+            const $table = $('#chapters-table').DataTable();
+            const $classFilter = $('#filter-chapters-class');
+            const $subjectFilter = $('#filter-chapters-subject');
+
+            const filterSubjects = () => {
+                const selectedClass = String($classFilter.val());
+                let selectedVisible = false;
+
+                $subjectFilter.find('option').each(function () {
+                    const $option = $(this);
+                    if (!$option.val()) {
+                        $option.prop('hidden', false);
+                        return;
+                    }
+
+                    const optionClassIds = ($option.attr('data-class-ids') || '').split(',').filter(Boolean);
+                    const visible = !selectedClass || optionClassIds.includes(selectedClass);
+                    $option.prop('hidden', !visible);
+
+                    if ($option.is(':selected') && visible) {
+                        selectedVisible = true;
+                    }
+                });
+
+                if (!selectedVisible) {
+                    $subjectFilter.val('');
+                }
+            };
+
+            const applyFilters = () => {
+                const className = $classFilter.find(':selected').attr('data-class-name') || '';
+                $table.column(0).search(className).draw();
+                $table.column(1).search($subjectFilter.val()).draw();
+            };
+
+            $classFilter.on('change', () => {
+                filterSubjects();
+                applyFilters();
+            });
+            $subjectFilter.on('change', applyFilters);
+
             filterSubjects();
         });
     </script>
