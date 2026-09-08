@@ -74,6 +74,8 @@ return [
         'manage_exams' => 'Manage exams',
         'custom_exam' => 'Customize exam',
         'create_account' => 'Create free account',
+        'hero_play_video' => 'Play video',
+        'hero_video_title' => 'How to Take a BD Model Test Online | Step-by-Step Guide for Students',
         'start' => 'Start',
         'why_eyebrow' => 'Why choose BD Model Test',
         'why_title' => 'Built for Bangladeshi students who practise with purpose',

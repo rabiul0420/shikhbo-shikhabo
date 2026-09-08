@@ -139,27 +139,76 @@
 
         .home-hero-visual {
             position: relative;
-            min-height: 240px;
+            min-height: 0;
             animation: riseIn .9s ease both .12s;
         }
 
-        .hero-stage {
+        .hero-video {
             position: relative;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 20px;
+            background: #0b1220;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, .35);
+            border: 1px solid rgba(255, 255, 255, .16);
+        }
+
+        .hero-video iframe,
+        .hero-video-thumb {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            object-fit: cover;
+        }
+
+        .hero-video iframe {
+            position: absolute;
+            inset: 0;
+        }
+
+        .hero-video-trigger {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            border: 0;
+            cursor: pointer;
+            background: transparent;
+            color: inherit;
+        }
+
+        .hero-video-trigger:focus-visible {
+            outline: 3px solid #7dd3fc;
+            outline-offset: 3px;
+        }
+
+        .hero-video-play {
+            position: absolute;
+            inset: 0;
             display: grid;
             place-items: center;
-            min-height: 240px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .42));
+            transition: background .2s ease;
         }
 
-        .hero-stage svg {
-            width: min(100%, 380px);
-            height: auto;
-            filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .28));
-            animation: gentleBob 6s ease-in-out infinite;
+        .hero-video-play svg {
+            width: 72px;
+            height: 72px;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .45));
+            transition: transform .2s ease;
         }
 
-        @keyframes gentleBob {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        .hero-video-trigger:hover .hero-video-play,
+        .hero-video-trigger:focus-visible .hero-video-play {
+            background: linear-gradient(180deg, rgba(0, 0, 0, .04), rgba(0, 0, 0, .5));
+        }
+
+        .hero-video-trigger:hover .hero-video-play svg,
+        .hero-video-trigger:focus-visible .hero-video-play svg {
+            transform: scale(1.08);
         }
 
         @keyframes riseIn {
@@ -914,9 +963,9 @@
 
         @media (max-width: 980px) {
             .home-hero-inner { grid-template-columns: 1fr; padding: 28px 0 24px; }
-            .home-hero-visual { min-height: 200px; order: -1; }
-            .hero-stage { min-height: 200px; }
-            .hero-stage svg { width: min(100%, 300px); }
+            .home-hero-visual { order: -1; }
+            .hero-video { border-radius: 16px; }
+            .hero-video-play svg { width: 60px; height: 60px; }
             .why-grid { grid-template-columns: 1fr 1fr; }
         }
 
@@ -977,35 +1026,30 @@
                     @endauth
                 </div>
             </div>
-            <div class="home-hero-visual" aria-hidden="true">
-                <div class="hero-stage">
-                    <svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="54" y="48" width="372" height="264" rx="28" fill="url(#heroPanel)"/>
-                        <path d="M96 98c0-10 7.8-17 17.6-15.4 20.6 3.2 36.2 10.8 50.8 22.8v102c-14-10.4-30.4-17.2-49-20.2-10.8-1.6-19.4 6.2-19.4 17V98Z" fill="url(#heroBlue)"/>
-                        <path d="M232 105.4v102c14-10.4 30.4-17.2 49-20.2 10.8-1.6 19.4 6.2 19.4 17V98c0-10-7.8-17-17.6-15.4-20.6 3.2-36.2 10.8-50.8 22.8Z" fill="url(#heroGreen)"/>
-                        <path d="M164 106v102" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
-                        <circle cx="164" cy="188" r="24" fill="#111827"/>
-                        <text x="164" y="195" text-anchor="middle" fill="#fff" font-family="Sora, sans-serif" font-size="16" font-weight="800">SS</text>
-                        <rect x="268" y="118" width="118" height="14" rx="7" fill="#fff" fill-opacity=".55"/>
-                        <rect x="268" y="148" width="96" height="14" rx="7" fill="#fff" fill-opacity=".35"/>
-                        <rect x="268" y="178" width="108" height="14" rx="7" fill="#fff" fill-opacity=".28"/>
-                        <rect x="268" y="220" width="88" height="36" rx="18" fill="#fff"/>
-                        <text x="312" y="243" text-anchor="middle" fill="#2563eb" font-family="Hind Siliguri, sans-serif" font-size="14" font-weight="700">{{ __('site.home.start') }}</text>
-                        <defs>
-                            <linearGradient id="heroPanel" x1="54" y1="48" x2="426" y2="312" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#0ea5e9"/>
-                                <stop offset="1" stop-color="#059669"/>
-                            </linearGradient>
-                            <linearGradient id="heroBlue" x1="96" y1="82" x2="164" y2="220" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#7dd3fc"/>
-                                <stop offset="1" stop-color="#2563eb"/>
-                            </linearGradient>
-                            <linearGradient id="heroGreen" x1="164" y1="90" x2="300" y2="220" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#6ee7b7"/>
-                                <stop offset="1" stop-color="#059669"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+            <div class="home-hero-visual">
+                <div class="hero-video" data-hero-video data-youtube-id="GJ55Mnr3Kz4">
+                    <button
+                        type="button"
+                        class="hero-video-trigger"
+                        data-hero-video-play
+                        aria-label="{{ __('site.home.hero_play_video') }}"
+                    >
+                        <img
+                            class="hero-video-thumb"
+                            src="https://i.ytimg.com/vi/GJ55Mnr3Kz4/maxresdefault.jpg"
+                            alt="{{ __('site.home.hero_video_title') }}"
+                            width="1280"
+                            height="720"
+                            loading="eager"
+                            onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/GJ55Mnr3Kz4/hqdefault.jpg'"
+                        >
+                        <span class="hero-video-play" aria-hidden="true">
+                            <svg viewBox="0 0 68 48" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.31 34 0 34 0S12.21.31 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.24 13.05 0 24 0 24s.24 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.69 34 48 34 48s21.79-.31 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.76 34.95 68 24 68 24s-.24-10.95-1.48-16.26z" fill="#f00"/>
+                                <path d="M45 24 27 14v20" fill="#fff"/>
+                            </svg>
+                        </span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1283,6 +1327,26 @@
 
 @push('scripts')
     <script>
+
+        (() => {
+            const player = document.querySelector('[data-hero-video]');
+            if (!player) return;
+
+            const playBtn = player.querySelector('[data-hero-video-play]');
+            const videoId = player.dataset.youtubeId;
+            if (!playBtn || !videoId) return;
+
+            playBtn.addEventListener('click', () => {
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0&modestbranding=1`;
+                iframe.title = @json(__('site.home.hero_video_title'));
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                iframe.allowFullscreen = true;
+                iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                player.replaceChildren(iframe);
+                player.classList.add('is-playing');
+            });
+        })();
 
         (() => {
             const carousels = document.querySelectorAll('[data-carousel]');
