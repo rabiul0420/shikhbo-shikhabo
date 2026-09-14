@@ -7,6 +7,7 @@
 ])
 
 @push('styles')
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
     <style>
 
         .home-hero {
@@ -143,15 +144,33 @@
             animation: riseIn .9s ease both .12s;
         }
 
+        .hero-video-card {
+            background: #fff;
+            border: 2px solid #0e5a6b;
+            border-radius: 28px;
+            padding: 8px 14px 14px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, .28);
+        }
+
+        .hero-video-heading {
+            margin: 0;
+            padding: 14px 8px 12px;
+            text-align: center;
+            color: #111;
+            font-family: "Nunito", "Hind Siliguri", var(--font-display);
+            font-weight: 800;
+            font-size: clamp(22px, 2.8vw, 30px);
+            line-height: 1.2;
+            letter-spacing: -.01em;
+        }
+
         .hero-video {
             position: relative;
             aspect-ratio: 16 / 9;
             width: 100%;
             overflow: hidden;
-            border-radius: 20px;
+            border-radius: 16px;
             background: #0b1220;
-            box-shadow: 0 24px 48px rgba(0, 0, 0, .35);
-            border: 1px solid rgba(255, 255, 255, .16);
         }
 
         .hero-video iframe,
@@ -964,7 +983,9 @@
         @media (max-width: 980px) {
             .home-hero-inner { grid-template-columns: 1fr; padding: 28px 0 24px; }
             .home-hero-visual { order: -1; }
-            .hero-video { border-radius: 16px; }
+            .hero-video-card { border-radius: 22px; padding: 6px 10px 10px; }
+            .hero-video { border-radius: 14px; }
+            .hero-video-heading { font-size: 22px; padding: 12px 6px 10px; }
             .hero-video-play svg { width: 60px; height: 60px; }
             .why-grid { grid-template-columns: 1fr 1fr; }
         }
@@ -1027,7 +1048,9 @@
                 </div>
             </div>
             <div class="home-hero-visual">
-                <div class="hero-video" data-hero-video data-youtube-id="GJ55Mnr3Kz4">
+                <div class="hero-video-card">
+                    <h2 class="hero-video-heading">{{ __('site.home.hero_watch_demo') }}</h2>
+                    <div class="hero-video" data-hero-video data-youtube-id="GJ55Mnr3Kz4">
                     <button
                         type="button"
                         class="hero-video-trigger"
@@ -1050,6 +1073,7 @@
                             </svg>
                         </span>
                     </button>
+                    </div>
                 </div>
             </div>
         </div>

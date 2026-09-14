@@ -75,6 +75,7 @@ return [
         'custom_exam' => 'কাস্টম পরীক্ষা',
         'create_account' => 'ফ্রি অ্যাকাউন্ট খুলুন',
         'hero_play_video' => 'ভিডিও চালান',
+        'hero_watch_demo' => 'ডেমো ভিডিও দেখুন',
         'hero_video_title' => 'অনলাইনে BD মডেল টেস্ট কীভাবে দিবেন | শিক্ষার্থীদের ধাপে ধাপে গাইড',
         'start' => 'শুরু',
         'why_eyebrow' => 'কেন BD Model Test',
