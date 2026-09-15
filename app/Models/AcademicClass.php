@@ -9,7 +9,9 @@ use Illuminate\Support\Str;
 
 class AcademicClass extends Model
 {
-    protected $fillable = ['name'];
+    use \App\Models\Concerns\HasAcademicOwner;
+
+    protected $fillable = ['name', 'created_by'];
 
     public function chapters(): HasMany
     {

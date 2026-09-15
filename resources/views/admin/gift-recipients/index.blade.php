@@ -6,57 +6,7 @@
 
 @section('content')
     <div class="admin-layout">
-        <aside class="admin-sidebar">
-            <div class="admin-brand">
-                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                <div>
-                    <h2>Bd ModelTest Admin</h2>
-                    <p>{{ auth()->user()->name }}</p>
-                </div>
-            </div>
-
-            <nav class="admin-menu" aria-label="Admin navigation">
-                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Academic Setup
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Exam
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.exams.index') }}#exam-list">Exam List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.exams.index') }}#add-exam">Add Exam</a>
-                    </div>
-                </div>
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Blog
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.index') }}">Blog List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.create') }}">Add Blog</a>
-                    </div>
-                </div>
-
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.custom-results.index') }}">Custom Result</a>
-                <a class="admin-nav-link admin-menu-direct is-active" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar')
 
         <div class="admin-content">
             <section class="panel">

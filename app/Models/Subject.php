@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subject extends Model
 {
-    protected $fillable = ['name'];
+    use \App\Models\Concerns\HasAcademicOwner;
+
+    protected $fillable = ['name', 'created_by'];
 
     public function academicClasses(): BelongsToMany
     {

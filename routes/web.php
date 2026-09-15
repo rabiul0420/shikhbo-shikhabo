@@ -190,16 +190,16 @@ $localizedRoutes = function () {
         ->where('blog', '[A-Za-z0-9\-]+')
         ->name('blog.show');
 
-    Route::middleware('guest')->group(function () {
+    Route::middleware('guest:web')->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [AuthController::class, 'login']);
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
         Route::post('/register', [AuthController::class, 'register']);
     });
 
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:web')->name('logout');
 
-    Route::middleware('auth')->group(function () {
+    Route::middleware('auth:web')->group(function () {
         Route::get('/my-profile', [AuthController::class, 'profile'])->name('profile.show');
         Route::get('/my-profile/edit', [AuthController::class, 'editProfile'])->name('profile.edit');
         Route::patch('/my-profile', [AuthController::class, 'updateProfile'])->name('profile.update');
@@ -232,12 +232,16 @@ $localizedRoutes();
 // Bangla — /bn prefix (route names become bn.*)
 Route::prefix('bn')->as('bn.')->group($localizedRoutes);
 
-Route::middleware('guest')->group(function () {
+Route::middleware('guest:admin')->group(function () {
     Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
     Route::post('/admin/login', [AuthController::class, 'login']);
 });
 
 Route::middleware('admin')->group(function () {
+    Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+    Route::patch('/admin/profile/password', [\App\Http\Controllers\AdminProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('admin.profile.password.update');
+    Route::get('/admin/profile', [\App\Http\Controllers\AdminProfileController::class, 'show'])->name('admin.profile.show');
+    Route::patch('/admin/profile', [\App\Http\Controllers\AdminProfileController::class, 'update'])->name('admin.profile.update');
     Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.index');
     Route::get('/admin/questions/create', [QuestionController::class, 'create'])->name('admin.questions.create');
     Route::get('/admin/exams', [ExamController::class, 'index'])->name('admin.exams.index');
@@ -246,7 +250,9 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/exams/{exam}/edit-data', [ExamController::class, 'editData'])->name('admin.exams.edit-data');
     Route::get('/admin/exams/{exam}/results', [AdminResultController::class, 'exam'])->name('admin.exams.results');
     Route::get('/admin/results', [AdminResultController::class, 'index'])->name('admin.results.index');
+    Route::get('/admin/results/{attempt}', [ExamAttemptController::class, 'result'])->name('admin.results.show');
     Route::get('/admin/custom-results', [AdminCustomResultController::class, 'index'])->name('admin.custom-results.index');
+    Route::get('/admin/custom-results/{attempt}', [CustomExamController::class, 'result'])->name('admin.custom-results.show');
     Route::get('/admin/gift-recipients', [AdminGiftRecipientController::class, 'index'])->name('admin.gift-recipients.index');
     Route::patch('/admin/gift-recipients/{attempt}/given', [AdminGiftRecipientController::class, 'markGiven'])->name('admin.gift-recipients.given');
     Route::get('/admin/students', [AdminStudentController::class, 'index'])->name('admin.students.index');
@@ -256,6 +262,7 @@ Route::middleware('admin')->group(function () {
         Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/admin/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
         Route::post('/admin/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+        Route::patch('/admin/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('admin.users.role.update');
     });
     Route::get('/admin/schools', [AdminSchoolController::class, 'index'])->name('admin.schools.index');
     Route::post('/admin/schools', [AdminSchoolController::class, 'store'])->name('admin.schools.store');

@@ -2,93 +2,7 @@
 
 @section('content')
     <div class="admin-layout">
-        <aside class="admin-sidebar">
-            <div class="admin-brand">
-                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                <div>
-                    <h2>Bd ModelTest Admin</h2>
-                    <p>{{ auth()->user()->name }}</p>
-                </div>
-            </div>
-
-            <nav class="admin-menu" aria-label="Admin navigation">
-                <a class="admin-nav-link is-active" href="#dashboard">Dashboard</a>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Academic Setup
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Question
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="#question-list">Question List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.questions.create') }}">Question Add</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Exam
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.exams.index') }}#exam-list">Exam List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.exams.index') }}#add-exam">Add Exam</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Schools
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
-                    </div>
-                </div>
-
-                @if (auth()->user()->is_super_admin)
-                    <div class="admin-menu-group">
-                        <button class="admin-menu-toggle" type="button">
-                            User
-                            <span></span>
-                        </button>
-                        <div class="admin-submenu">
-                            <a class="admin-nav-link" href="{{ route('admin.users.index') }}">User List</a>
-                            <a class="admin-nav-link" href="{{ route('admin.users.create') }}">Add User</a>
-                        </div>
-                    </div>
-                @endif
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Blog
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.index') }}">Blog List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.create') }}">Add Blog</a>
-                    </div>
-                </div>
-
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.custom-results.index') }}">Custom Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
-
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar')
 
         <div class="admin-content">
             <section id="question-list" class="panel">
@@ -102,19 +16,55 @@
 
                 <form class="question-search-form" method="GET" action="{{ route('admin.index') }}#question-list">
                     <label>
+                        Class
+                        <select name="class_id" id="question-filter-class">
+                            <option value="">All classes</option>
+                            @foreach ($classes as $class)
+                                <option value="{{ $class->id }}" @selected(($filters['class_id'] ?? '') == $class->id)>{{ $class->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>
+                        Subject
+                        <select name="subject_id" id="question-filter-subject">
+                            <option value="">All subjects</option>
+                            @foreach ($subjects as $subject)
+                                <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}" @selected(($filters['subject_id'] ?? '') == $subject->id)>{{ $subject->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>
+                        Chapter
+                        <select name="chapter_id" id="question-filter-chapter">
+                            <option value="">All chapters</option>
+                            @foreach ($chapters as $chapter)
+                                <option value="{{ $chapter->id }}" data-class-id="{{ $chapter->academic_class_id }}" data-subject-id="{{ $chapter->subject_id }}" @selected(($filters['chapter_id'] ?? '') == $chapter->id)>{{ $chapter->display_name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>
+                        Created by
+                        <select name="creator_id" id="question-filter-creator">
+                            <option value="">All creators</option>
+                            @foreach ($creators as $creator)
+                                <option value="{{ $creator->id }}" @selected(($filters['creator_id'] ?? '') == $creator->id)>{{ $creator->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>
                         Search
-                        <input name="question_search" value="{{ $search }}" placeholder="Search question, class, subject, chapter">
+                        <input name="question_search" value="{{ $search }}" placeholder="Search question, class, subject, chapter, creator">
                     </label>
                     <div class="question-search-actions">
                         <button type="submit">Search</button>
-                        @if ($search !== '')
+                        @if ($hasFilters)
                             <a class="button secondary" href="{{ route('admin.index') }}#question-list">Clear</a>
                         @endif
                     </div>
                 </form>
 
                 @if ($questions->isEmpty())
-                    <p class="muted">{{ $search === '' ? 'No questions added yet.' : 'No questions matched your search.' }}</p>
+                    <p class="muted">{{ $hasFilters ? 'No questions matched your search or filters.' : 'No questions added yet.' }}</p>
                 @else
                     <div class="table-wrap">
                         <table class="admin-data-table">
@@ -124,6 +74,7 @@
                                     <th>Class</th>
                                     <th>Subject</th>
                                     <th>Oddhay / Chapter</th>
+                                    <th>Created by</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -134,7 +85,9 @@
                                         <td>{{ $question->academicClass->name ?? '-' }}</td>
                                         <td>{{ $question->subject->name ?? '-' }}</td>
                                         <td>{{ $question->chapter->display_name ?? '-' }}</td>
+                                        <td>{{ $question->creator?->name ?? 'Unknown' }}</td>
                                         <td>
+                                            @if ($question->canBeManagedBy(auth()->user()))
                                             <div class="table-actions">
                                                 <button
                                                     class="secondary-action small js-edit-question"
@@ -147,6 +100,9 @@
                                                     <button class="danger small" type="submit">Delete</button>
                                                 </form>
                                             </div>
+                                            @else
+                                                <span class="muted">Read only</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -174,6 +130,7 @@
             </section>
 
             @foreach ($questions as $question)
+                @continue(! $question->canBeManagedBy(auth()->user()))
                 <div class="modal-backdrop" id="edit-question-{{ $question->id }}" aria-hidden="true">
                     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-question-{{ $question->id }}-title">
                         <div class="modal-head">
@@ -261,7 +218,7 @@
 
         .question-search-form {
             display: grid;
-            grid-template-columns: minmax(220px, 1fr) auto;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             align-items: end;
             gap: 10px;
             margin-bottom: 14px;
@@ -284,6 +241,38 @@
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
+        const questionFilterClass = document.getElementById('question-filter-class');
+        const questionFilterSubject = document.getElementById('question-filter-subject');
+        const questionFilterChapter = document.getElementById('question-filter-chapter');
+        const questionFilterCreator = document.getElementById('question-filter-creator');
+
+        function updateQuestionFilterOptions() {
+            for (const option of questionFilterSubject.options) {
+                option.hidden = Boolean(option.value && questionFilterClass.value
+                    && !(option.dataset.classIds || '').split(',').includes(questionFilterClass.value));
+            }
+            for (const option of questionFilterChapter.options) {
+                option.hidden = Boolean(option.value && (
+                    (questionFilterClass.value && option.dataset.classId !== questionFilterClass.value)
+                    || (questionFilterSubject.value && option.dataset.subjectId !== questionFilterSubject.value)
+                ));
+            }
+        }
+
+        questionFilterClass.addEventListener('change', () => {
+            questionFilterSubject.value = '';
+            questionFilterChapter.value = '';
+            questionFilterClass.form.requestSubmit();
+        });
+        questionFilterSubject.addEventListener('change', () => {
+            questionFilterChapter.value = '';
+            questionFilterSubject.form.requestSubmit();
+        });
+        for (const select of [questionFilterChapter, questionFilterCreator]) {
+            select.addEventListener('change', () => select.form.requestSubmit());
+        }
+        updateQuestionFilterOptions();
+
         if (window.jQuery) {
             $(function () {
                 $('.admin-menu-toggle').on('click', function () {
@@ -332,6 +321,3 @@
         }
     </script>
 @endpush
-
-
-

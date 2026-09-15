@@ -40,7 +40,7 @@
                             <tbody>
                                 @foreach ($attempts as $attempt)
                                     <tr>
-                                        <td>{{ $attempt->user->name }}</td>
+                                        <td>{{ $attempt->user?->name ?? $attempt->admin?->name ?? 'Deleted account' }}</td>
                                         <td>{{ $attempt->customExam->title }}</td>
                                         <td>{{ $attempt->customExam->academicClass->name }}</td>
                                         <td>{{ $attempt->customExam->subject->name }}</td>
@@ -49,7 +49,7 @@
                                         <td>{{ $attempt->score }} / {{ $attempt->total_marks }}</td>
                                         <td>{{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</td>
                                         <td>
-                                            <a class="button secondary small" href="{{ route('custom-exam-attempts.result', $attempt) }}">View result</a>
+                                            <a class="button secondary small" href="{{ route('admin.custom-results.show', $attempt) }}">View result</a>
                                         </td>
                                     </tr>
                                 @endforeach

@@ -72,7 +72,8 @@
                                     <td>{{ $chapter->chapter_no ?: '-' }}</td>
                                     <td>{{ $chapter->name }}</td>
                                     <td>
-                                        <div class="table-actions">
+                                        @if ($chapter->canBeManagedBy(auth()->user()))
+<div class="table-actions">
                                             <button class="secondary-action small js-edit-academic" type="button" data-modal-target="edit-chapter-{{ $chapter->id }}">Edit</button>
                                             <form method="POST" action="{{ route('admin.chapters.destroy', $chapter) }}" onsubmit="return confirm('Delete this oddhay / chapter?')">
                                                 @csrf
@@ -80,6 +81,9 @@
                                                 <button class="danger small" type="submit">Delete</button>
                                             </form>
                                         </div>
+@else
+<span class="muted">Read only</span>
+@endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -135,6 +139,7 @@
             </div>
 
             @foreach ($chapters as $chapter)
+                @continue(! $chapter->canBeManagedBy(auth()->user()))
                 <div class="modal-backdrop" id="edit-chapter-{{ $chapter->id }}" aria-hidden="true">
                     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-chapter-{{ $chapter->id }}-title">
                         <div class="modal-head">

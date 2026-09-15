@@ -59,7 +59,7 @@
             <p class="muted">Submitted {{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</p>
         </div>
         <div class="result-actions">
-            <a class="button secondary" href="{{ route('exams.results', $attempt->exam) }}">All result</a>
+            <a class="button secondary" href="{{ route(auth()->user()->is_admin ? 'admin.exams.results' : 'exams.results', $attempt->exam) }}">All result</a>
             <a class="button secondary" href="{{ route('home') }}">Take another exam</a>
         </div>
     </div>

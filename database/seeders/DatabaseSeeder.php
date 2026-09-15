@@ -3,7 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\School;
-use App\Models\User;
+use App\Models\Admin;
+use App\Models\Student;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -64,7 +65,7 @@ class DatabaseSeeder extends Seeder
             ->where('title', 'Bd ModelTest School')
             ->value('id');
 
-        User::updateOrCreate(
+        Admin::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin User',
@@ -76,7 +77,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        User::updateOrCreate(
+        Student::updateOrCreate(
             ['email' => 'student@example.com'],
             [
                 'name' => 'Student User',

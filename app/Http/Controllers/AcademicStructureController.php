@@ -77,13 +77,14 @@ class AcademicStructureController extends Controller
     {
         AcademicClass::create($request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:academic_classes,name'],
-        ]));
+        ]) + ['created_by' => $request->user()->id]);
 
         return back()->with('status', 'Class added.');
     }
 
     public function updateClass(Request $request, AcademicClass $academicClass): RedirectResponse
     {
+        abort_unless($academicClass->canBeManagedBy($request->user()), 403);
         $academicClass->update($request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:academic_classes,name,' . $academicClass->id],
         ]));
@@ -93,6 +94,8 @@ class AcademicStructureController extends Controller
 
     public function destroyClass(AcademicClass $academicClass): RedirectResponse
     {
+        abort_unless($academicClass->canBeManagedBy(request()->user()), 403);
+        $this->ensureOwnedDependents('academic_class_id', $academicClass->id);
         $academicClass->delete();
 
         return back()->with('status', 'Class deleted.');
@@ -111,7 +114,7 @@ class AcademicStructureController extends Controller
             ],
         ]);
 
-        $subject = Subject::create(['name' => $data['name']]);
+        $subject = Subject::create(['name' => $data['name'], 'created_by' => $request->user()->id]);
         $subject->academicClasses()->sync($data['academic_class_ids']);
 
         return back()->with('status', 'Subject added.');
@@ -119,6 +122,7 @@ class AcademicStructureController extends Controller
 
     public function updateSubject(Request $request, Subject $subject): RedirectResponse
     {
+        abort_unless($subject->canBeManagedBy($request->user()), 403);
         $data = $request->validate([
             'academic_class_ids' => ['required', 'array', 'min:1'],
             'academic_class_ids.*' => ['exists:academic_classes,id'],
@@ -138,6 +142,8 @@ class AcademicStructureController extends Controller
 
     public function destroySubject(Subject $subject): RedirectResponse
     {
+        abort_unless($subject->canBeManagedBy(request()->user()), 403);
+        $this->ensureOwnedDependents('subject_id', $subject->id);
         $subject->delete();
 
         return back()->with('status', 'Subject deleted.');
@@ -154,13 +160,14 @@ class AcademicStructureController extends Controller
             ],
             'chapter_no' => ['required', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:150'],
-        ]));
+        ]) + ['created_by' => $request->user()->id]);
 
         return back()->with('status', 'Oddhay / Chapter added.');
     }
 
     public function updateChapter(Request $request, Chapter $chapter): RedirectResponse
     {
+        abort_unless($chapter->canBeManagedBy($request->user()), 403);
         $chapter->update($request->validate([
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
             'subject_id' => [
@@ -177,8 +184,26 @@ class AcademicStructureController extends Controller
 
     public function destroyChapter(Chapter $chapter): RedirectResponse
     {
+        abort_unless($chapter->canBeManagedBy(request()->user()), 403);
+        $this->ensureOwnedDependents('chapter_id', $chapter->id);
         $chapter->delete();
 
         return back()->with('status', 'Oddhay / Chapter deleted.');
+    }
+
+    private function ensureOwnedDependents(string $column, int $id): void
+    {
+        $user = request()->user();
+        if ($user->adminRole() !== 'exam_manager') {
+            return;
+        }
+
+        $notOwned = fn ($query) => $query->whereNull('created_by')->orWhere('created_by', '!=', $user->id);
+        $hasOtherExams = \App\Models\Exam::where($column, $id)->where($notOwned)->exists();
+        $hasOtherQuestions = \App\Models\Question::where($column, $id)->where($notOwned)->exists();
+        $hasOtherChapters = $column !== 'chapter_id'
+            && Chapter::where($column, $id)->where($notOwned)->exists();
+
+        abort_if($hasOtherExams || $hasOtherChapters || $hasOtherQuestions, 403, 'This item contains chapters, questions or exams owned by another user.');
     }
 }

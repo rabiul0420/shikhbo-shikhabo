@@ -10,6 +10,19 @@ use Illuminate\Support\Str;
 
 class Exam extends Model
 {
+    public function scopeVisibleToAdmin(\Illuminate\Database\Eloquent\Builder $query, Admin $user): void
+    {
+        if ($user->adminRole() === 'exam_manager') {
+            $query->where('exams.created_by', $user->id);
+        }
+    }
+
+    public function accessibleByAdmin(Admin $user): bool
+    {
+        return $user->is_admin && ($user->adminRole() !== 'exam_manager'
+            || ($this->created_by !== null && (int) $this->created_by === (int) $user->id));
+    }
+
     protected $fillable = [
         'created_by',
         'academic_class_id',
@@ -132,7 +145,7 @@ class Exam extends Model
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(Admin::class, 'created_by');
     }
 
     public function academicClass(): BelongsTo

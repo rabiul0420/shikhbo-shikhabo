@@ -11,6 +11,7 @@ class CustomExam extends Model
 {
     protected $fillable = [
         'user_id',
+        'admin_id',
         'academic_class_id',
         'subject_id',
         'chapter_id',
@@ -29,7 +30,12 @@ class CustomExam extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Student::class, 'user_id');
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class);
     }
 
     public function academicClass(): BelongsTo

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Student;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +14,7 @@ class AdminStudentController extends Controller
 {
     public function index(): View
     {
-        $studentCount = User::query()
+        $studentCount = Student::query()
             ->where('is_admin', false)
             ->count();
 
@@ -24,26 +24,26 @@ class AdminStudentController extends Controller
     public function data(Request $request): JsonResponse
     {
         $columns = [
-            'users.name',
-            'users.email',
-            'users.phone',
+            'students.name',
+            'students.email',
+            'students.phone',
             'academic_classes.name',
             'schools.title',
             'exam_attempts_count',
             'exam_attempts_max_submitted_at',
-            'users.created_at',
+            'students.created_at',
         ];
 
-        $baseQuery = User::query()
-            ->select('users.*')
-            ->where('users.is_admin', false)
-            ->leftJoin('academic_classes', 'users.academic_class_id', '=', 'academic_classes.id')
-            ->leftJoin('schools', 'users.school_id', '=', 'schools.id')
+        $baseQuery = Student::query()
+            ->select('students.*')
+            ->where('students.is_admin', false)
+            ->leftJoin('academic_classes', 'students.academic_class_id', '=', 'academic_classes.id')
+            ->leftJoin('schools', 'students.school_id', '=', 'schools.id')
             ->with(['academicClass', 'school'])
             ->withCount('examAttempts')
             ->withMax('examAttempts', 'submitted_at');
 
-        $recordsTotal = User::query()
+        $recordsTotal = Student::query()
             ->where('is_admin', false)
             ->count();
 
@@ -52,19 +52,19 @@ class AdminStudentController extends Controller
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
                 $query
-                    ->where('users.name', 'like', "%{$search}%")
-                    ->orWhere('users.email', 'like', "%{$search}%")
-                    ->orWhere('users.phone', 'like', "%{$search}%")
+                    ->where('students.name', 'like', "%{$search}%")
+                    ->orWhere('students.email', 'like', "%{$search}%")
+                    ->orWhere('students.phone', 'like', "%{$search}%")
                     ->orWhere('academic_classes.name', 'like', "%{$search}%")
                     ->orWhere('schools.title', 'like', "%{$search}%");
             });
         }
 
-        $recordsFiltered = (clone $baseQuery)->count('users.id');
+        $recordsFiltered = (clone $baseQuery)->count('students.id');
 
         $orderColumnIndex = (int) $request->input('order.0.column', 0);
         $orderDirection = $request->input('order.0.dir') === 'desc' ? 'desc' : 'asc';
-        $orderColumn = $columns[$orderColumnIndex] ?? 'users.name';
+        $orderColumn = $columns[$orderColumnIndex] ?? 'students.name';
 
         $start = max((int) $request->input('start', 0), 0);
         $length = (int) $request->input('length', 10);
@@ -80,7 +80,7 @@ class AdminStudentController extends Controller
             'draw' => (int) $request->input('draw', 0),
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
-            'data' => $students->map(fn (User $student) => [
+            'data' => $students->map(fn (Student $student) => [
                 e($student->name),
                 e($student->email),
                 e($student->phone ?: '-'),
@@ -96,7 +96,7 @@ class AdminStudentController extends Controller
         ]);
     }
 
-    public function updatePassword(Request $request, User $student): RedirectResponse
+    public function updatePassword(Request $request, Student $student): RedirectResponse
     {
         abort_if($student->is_admin, 404);
 

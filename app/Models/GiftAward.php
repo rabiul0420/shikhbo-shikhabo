@@ -30,6 +30,6 @@ class GiftAward extends Model
 
     public function giver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'given_by');
+        return $this->belongsTo(Admin::class, 'given_by');
     }
 }

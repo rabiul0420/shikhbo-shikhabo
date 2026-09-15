@@ -200,6 +200,9 @@ class ExamAttemptController extends Controller
 
     public function result(Request $request, ExamAttempt $attempt): View
     {
+        if ($request->user()->adminRole() === 'exam_manager') {
+            abort_unless($attempt->exam->accessibleByAdmin($request->user()), 403);
+        }
         abort_unless(
             $request->user()->is_admin || (int) $attempt->user_id === (int) $request->user()->id,
             403
@@ -258,6 +261,10 @@ class ExamAttemptController extends Controller
     private function authorizeExamResultsForUser(Request $request, Exam $exam): void
     {
         $user = $request->user();
+
+        if ($user->adminRole() === 'exam_manager') {
+            abort_unless($exam->accessibleByAdmin($user), 403);
+        }
 
         abort_unless(
             $user->is_admin

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicClass;
 use App\Models\School;
-use App\Models\User;
+use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +43,8 @@ class AuthController extends Controller
             'is_admin' => $isAdminLogin,
         ];
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        $guard = $isAdminLogin ? 'admin' : 'web';
+        if (! Auth::guard($guard)->attempt($credentials, $request->boolean('remember'))) {
             return back()
                 ->withErrors([$loginField => 'The provided credentials do not match our records.'])
                 ->onlyInput($loginField);
@@ -53,11 +54,14 @@ class AuthController extends Controller
 
         $redirectTo = $request->input('redirect_to');
 
-        if ($redirectTo && ! str_starts_with($redirectTo, '//')) {
+        if (! $isAdminLogin && $redirectTo && ! str_starts_with($redirectTo, '//') && ! str_starts_with($redirectTo, '/admin')) {
             return redirect()->to($redirectTo);
         }
 
-        return redirect()->intended($isAdminLogin ? route('admin.index') : route('home'));
+        if ($isAdminLogin) {
+            return redirect()->route('admin.index');
+        }
+        return redirect()->intended(route('home'));
     }
 
     public function showRegister(): View
@@ -78,7 +82,7 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30', 'unique:users,phone'],
+            'phone' => ['required', 'string', 'max:30', 'unique:students,phone'],
             'school_name' => ['required', 'string', 'max:255'],
             'academic_class_id' => ['required', 'exists:academic_classes,id'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -102,7 +106,7 @@ class AuthController extends Controller
             ? $this->storeProfilePhoto($request)
             : null;
 
-        $user = User::create([
+        $user = Student::create([
             'name' => $data['name'],
             'email' => $this->internalEmailForPhone($data['phone']),
             'phone' => $data['phone'],
@@ -113,7 +117,7 @@ class AuthController extends Controller
             'is_admin' => false,
         ]);
 
-        Auth::login($user);
+        Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
         return redirect()->route('home')->with('status', 'Account created.');
@@ -144,7 +148,7 @@ class AuthController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30', Rule::unique('users', 'phone')->ignore($user->id)],
+            'phone' => ['required', 'string', 'max:30', Rule::unique('students', 'phone')->ignore($user->id)],
             'school_name' => ['nullable', 'string', 'max:255'],
             'academic_class_id' => ['nullable', 'exists:academic_classes,id'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -189,11 +193,10 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
-        $redirectRoute = $request->user()?->is_admin ? 'admin.login' : 'home';
-
-        Auth::logout();
-
-        $request->session()->invalidate();
+        $isAdmin = $request->routeIs('admin.logout');
+        $redirectRoute = $isAdmin ? 'admin.login' : 'home';
+        Auth::guard($isAdmin ? 'admin' : 'web')->logout();
+        $request->session()->regenerate();
         $request->session()->regenerateToken();
 
         return redirect()->route($redirectRoute)->with('status', 'You are logged out.');

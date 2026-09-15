@@ -8,7 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Question extends Model
 {
+    use \App\Models\Concerns\HasAcademicOwner;
+
     protected $fillable = [
+        'created_by',
         'academic_class_id',
         'subject_id',
         'chapter_id',
@@ -30,6 +33,11 @@ class Question extends Model
     public function academicClass(): BelongsTo
     {
         return $this->belongsTo(AcademicClass::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'created_by');
     }
 
     public function subject(): BelongsTo
