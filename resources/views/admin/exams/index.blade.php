@@ -10,92 +10,7 @@
 
 @section('content')
     <div class="admin-layout">
-        <aside class="admin-sidebar">
-            <div class="admin-brand">
-                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                <div>
-                    <h2>Bd ModelTest Admin</h2>
-                    <p>{{ auth()->user()->name }}</p>
-                </div>
-            </div>
-
-            <nav class="admin-menu" aria-label="Admin navigation">
-                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Academic Setup
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Question
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.index') }}#question-list">Question List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.questions.create') }}">Question Add</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group is-open">
-                    <button class="admin-menu-toggle" type="button">
-                        Exam
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link is-active" href="#exam-list">Exam List</a>
-                        <a class="admin-nav-link js-edit-exam" href="#add-exam" data-modal-target="add-exam">Add Exam</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Schools
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
-                    </div>
-                </div>
-
-                @if (auth()->user()->is_super_admin)
-                    <div class="admin-menu-group">
-                        <button class="admin-menu-toggle" type="button">
-                            User
-                            <span></span>
-                        </button>
-                        <div class="admin-submenu">
-                            <a class="admin-nav-link" href="{{ route('admin.users.index') }}">User List</a>
-                            <a class="admin-nav-link" href="{{ route('admin.users.create') }}">Add User</a>
-                        </div>
-                    </div>
-                @endif
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Blog
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.index') }}">Blog List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.create') }}">Add Blog</a>
-                    </div>
-                </div>
-
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.results.index') }}">Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.custom-results.index') }}">Custom Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar')
 
         <div class="admin-content">
             <section id="exam-list" class="panel">
@@ -115,6 +30,12 @@
                         <option value="">All classes</option>
                         @foreach ($classes as $class)
                             <option value="{{ $class->id }}">{{ $class->name }}</option>
+                        @endforeach
+                    </select>
+                    <select id="filter-creator" aria-label="Filter by exam creator">
+                        <option value="">All creators</option>
+                        @foreach ($creators as $creator)
+                            <option value="{{ $creator->id }}">{{ $creator->name }}</option>
                         @endforeach
                     </select>
                     <select id="filter-subject" aria-label="Filter by subject">
@@ -137,6 +58,7 @@
                                 <th>Duration</th>
                                 <th>Offer</th>
                                 <th>Questions</th>
+                                <th>Created by</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -354,6 +276,7 @@
                             data: function (d) {
                                 d.class_id = $('#filter-class').val();
                                 d.subject_id = $('#filter-subject').val();
+                                d.creator_id = $('#filter-creator').val();
                             },
                         },
                         pageLength: 10,
@@ -368,6 +291,7 @@
                             { data: 'duration', name: 'duration_minutes' },
                             { data: 'offer', name: 'offer' },
                             { data: 'questions_count', name: 'questions_count' },
+                            { data: 'creator', name: 'creator' },
                             { data: 'actions', name: 'actions' },
                         ],
                         columnDefs: [
@@ -407,7 +331,7 @@
                         examsTable.ajax.reload(null, false);
                     });
 
-                    $('#filter-subject').on('change', function () {
+                    $('#filter-subject, #filter-creator').on('change', function () {
                         examsTable.ajax.reload(null, false);
                     });
                 }

@@ -104,7 +104,7 @@
                         @foreach ($attempts as $attempt)
                             <tr>
                                 <td>{{ $attemptPositions[$attempt->id] }}</td>
-                                <td>{{ $attempt->user->name }}</td>
+                                <td>{{ $attempt->user?->name ?? $attempt->admin?->name ?? 'Deleted account' }}</td>
                                 <td>{{ $attempt->score }} / {{ $attempt->total_marks }}</td>
                                 <td>{{ $exam->prizeForPosition($attemptPositions[$attempt->id]) ?: '-' }}</td>
                                 <td>{{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</td>

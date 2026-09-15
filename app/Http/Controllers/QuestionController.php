@@ -73,6 +73,7 @@ class QuestionController extends Controller
         }
 
         $question = Question::create([
+            'created_by' => $request->user()->id,
             'academic_class_id' => $academicClass->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -146,7 +147,7 @@ class QuestionController extends Controller
             return true;
         })->values();
 
-        DB::transaction(function () use ($academicClass, $subject, $chapter, $questionsToStore) {
+        DB::transaction(function () use ($request, $academicClass, $subject, $chapter, $questionsToStore) {
             $sortOrder = Question::query()
                 ->where('academic_class_id', $academicClass->id)
                 ->where('subject_id', $subject->id)
@@ -155,6 +156,7 @@ class QuestionController extends Controller
 
             foreach ($questionsToStore as $parsedQuestion) {
                 $question = Question::create([
+                    'created_by' => $request->user()->id,
                     'academic_class_id' => $academicClass->id,
                     'subject_id' => $subject->id,
                     'chapter_id' => $chapter->id,
@@ -187,6 +189,7 @@ class QuestionController extends Controller
 
     public function update(Request $request, Question $question): RedirectResponse
     {
+        abort_unless($question->canBeManagedBy($request->user()), 403);
         $data = $request->validate([
             'question_text' => ['required', 'string'],
             'options' => ['required', 'array', 'min:2'],
@@ -231,6 +234,7 @@ class QuestionController extends Controller
 
     public function destroy(Question $question): RedirectResponse
     {
+        abort_unless($question->canBeManagedBy(request()->user()), 403);
         $question->delete();
 
         return back()->with('status', 'Question deleted.');

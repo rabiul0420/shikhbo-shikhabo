@@ -11,6 +11,7 @@ class CustomExamAttempt extends Model
     protected $fillable = [
         'custom_exam_id',
         'user_id',
+        'admin_id',
         'status',
         'score',
         'total_marks',
@@ -33,7 +34,12 @@ class CustomExamAttempt extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Student::class, 'user_id');
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class);
     }
 
     public function answers(): HasMany

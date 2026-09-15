@@ -11,7 +11,7 @@
             <p class="muted">Submitted {{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</p>
         </div>
         <div class="row">
-            <a class="button secondary" href="{{ route('custom-exams.results') }}">Custom Results</a>
+            <a class="button secondary" href="{{ route(auth()->user()->is_admin ? 'admin.custom-results.index' : 'custom-exams.results') }}">Custom Results</a>
             <a class="button secondary" href="{{ route('custom-exams.create') }}">Create another</a>
         </div>
     </div>

@@ -23,7 +23,8 @@ class AdminResultController extends Controller
     private function resultsView(?Exam $exam = null): View
     {
         $examAttempts = ExamAttempt::query()
-            ->with(['exam.academicClass', 'exam.subject', 'exam.chapter', 'user'])
+            ->whereHas('exam', fn ($query) => $query->visibleToAdmin(request()->user()))
+            ->with(['exam.academicClass', 'exam.subject', 'exam.chapter', 'user', 'admin'])
             ->when($exam, fn ($query) => $query->where('exam_id', $exam->id))
             ->latest('submitted_at')
             ->get();

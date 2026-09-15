@@ -520,7 +520,7 @@
                     <a href="{{ route('home') }}">{{ __('site.nav.take_exam') }}</a>
                     <a href="{{ route('admin.index') }}">{{ __('site.nav.admin') }}</a>
                     @auth
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('admin.logout') }}">
                             @csrf
                             <button class="nav-button" type="submit">{{ __('site.nav.logout') }}</button>
                         </form>

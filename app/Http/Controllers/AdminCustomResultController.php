@@ -12,6 +12,7 @@ class AdminCustomResultController extends Controller
         $attempts = CustomExamAttempt::query()
             ->with([
                 'user.academicClass',
+                'admin',
                 'customExam.academicClass',
                 'customExam.subject',
                 'customExam.chapter',

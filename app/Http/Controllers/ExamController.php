@@ -7,6 +7,7 @@ use App\Models\Chapter;
 use App\Models\Exam;
 use App\Models\Question;
 use App\Models\Subject;
+use App\Models\Admin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,14 +19,17 @@ use Illuminate\View\View;
 
 class ExamController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $examCount = Exam::query()->count();
-        $resultExamIds = Exam::query()->pluck('id');
+        $visibleExams = Exam::query()->visibleToAdmin($request->user());
+        $examCount = (clone $visibleExams)->count();
+        $resultExamIds = (clone $visibleExams)->pluck('slug');
         $classes = AcademicClass::query()->orderBy('name')->get();
         $subjects = Subject::query()->with('academicClasses')->orderBy('name')->get();
 
-        return view('admin.exams.index', compact('examCount', 'resultExamIds', 'classes', 'subjects'));
+        $creators = Admin::query()->whereIn('id', (clone $visibleExams)->select('created_by'))->orderBy('name')->get(['id', 'name']);
+
+        return view('admin.exams.index', compact('examCount', 'resultExamIds', 'classes', 'subjects', 'creators'));
     }
 
     public function data(Request $request): JsonResponse
@@ -39,11 +43,13 @@ class ExamController extends Controller
             5 => 'duration_minutes',
             6 => 'offer',
             7 => 'questions_count',
+            8 => 'creator',
         ];
 
         $search = trim((string) $request->input('search.value', ''));
         $classId = (int) $request->input('class_id', 0) ?: null;
         $subjectId = (int) $request->input('subject_id', 0) ?: null;
+        $creatorId = (int) $request->input('creator_id', 0) ?: null;
         $start = max((int) $request->input('start', 0), 0);
         $length = (int) $request->input('length', 10);
         $length = $length === -1 ? 100 : min(max($length, 1), 100);
@@ -51,7 +57,8 @@ class ExamController extends Controller
         $orderDirection = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
 
         $baseQuery = Exam::query()
-            ->with(['academicClass', 'subject', 'chapter'])
+            ->visibleToAdmin($request->user())
+            ->with(['academicClass', 'subject', 'chapter', 'creator'])
             ->withCount('questions');
 
         $total = (clone $baseQuery)->count();
@@ -67,11 +74,13 @@ class ExamController extends Controller
                         ->orWhere('third_prize', 'like', "%{$search}%")
                         ->orWhereHas('academicClass', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('subject', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('chapter', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
+                        ->orWhereHas('chapter', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('creator', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
                 });
             })
             ->when($classId, fn (Builder $query) => $query->where('academic_class_id', $classId))
-            ->when($subjectId, fn (Builder $query) => $query->where('subject_id', $subjectId));
+            ->when($subjectId, fn (Builder $query) => $query->where('subject_id', $subjectId))
+            ->when($creatorId, fn (Builder $query) => $query->where('created_by', $creatorId));
 
         $filtered = (clone $filteredQuery)->count();
 
@@ -93,6 +102,7 @@ class ExamController extends Controller
                 'duration' => $exam->duration_minutes ? e($exam->duration_minutes . ' mins') : '-',
                 'offer' => $this->offerHtml($exam),
                 'questions_count' => $exam->questions_count,
+                'creator' => e($exam->creator?->name ?? 'Unknown'),
                 'actions' => $this->actionsHtml($exam),
             ]),
         ]);
@@ -334,6 +344,10 @@ class ExamController extends Controller
     private function orderExamData(Builder $query, string $column, string $direction): Builder
     {
         return match ($column) {
+            'creator' => $query->orderBy(
+                Admin::select('name')->whereColumn('admins.id', 'exams.created_by'),
+                $direction
+            )->orderBy('exams.id'),
             'academic_class' => $query->orderBy(
                 AcademicClass::select('name')->whereColumn('academic_classes.id', 'exams.academic_class_id'),
                 $direction

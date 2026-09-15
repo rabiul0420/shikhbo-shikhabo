@@ -7,7 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Chapter extends Model
 {
+    use \App\Models\Concerns\HasAcademicOwner;
+
     protected $fillable = [
+        'created_by',
         'academic_class_id',
         'subject_id',
         'chapter_no',

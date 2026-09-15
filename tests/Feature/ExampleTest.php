@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\Student;
+use App\Models\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -41,7 +42,7 @@ class ExampleTest extends TestCase
 
     public function test_logged_in_top_menu_shows_profile_and_logout(): void
     {
-        $student = User::factory()->create(['is_admin' => false]);
+        $student = Student::factory()->create(['is_admin' => false]);
 
         $this->actingAs($student)
             ->get('/')
@@ -121,7 +122,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_create_blog_post(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
             ->post(route('admin.blogs.store'), [
@@ -159,7 +160,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_blog_rejects_invalid_json_schema(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
             ->from(route('admin.blogs.create'))
@@ -210,7 +211,7 @@ class ExampleTest extends TestCase
 
     public function test_student_login_uses_mobile_number(): void
     {
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'email' => 'student-login@example.com',
             'phone' => '01712345678',
             'is_admin' => false,
@@ -226,7 +227,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_login_uses_email(): void
     {
-        $admin = User::factory()->create([
+        $admin = Admin::factory()->create([
             'email' => 'admin-login@example.com',
             'phone' => '01787654321',
             'is_admin' => true,
@@ -247,17 +248,17 @@ class ExampleTest extends TestCase
 
     public function test_admin_logout_redirects_to_admin_login(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
-            ->post(route('logout'))
+            ->post(route('admin.logout'))
             ->assertRedirect(route('admin.login'));
     }
 
     public function test_profile_page_requires_login_and_shows_account_details(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'name' => 'Student User',
             'email' => 'student@example.com',
             'phone' => '01712345678',
@@ -293,7 +294,7 @@ class ExampleTest extends TestCase
             'address' => 'Dhaka',
             'status' => 'active',
         ]);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'name' => 'Student User',
             'email' => 'student@example.com',
             'academic_class_id' => $class->id,
@@ -324,7 +325,7 @@ class ExampleTest extends TestCase
             'address' => 'Dhaka',
             'status' => 'active',
         ]);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'name' => 'Old Name',
             'email' => 'old-profile@example.com',
             'phone' => '01700000000',
@@ -364,7 +365,7 @@ class ExampleTest extends TestCase
 
     public function test_student_can_view_own_results_page(): void
     {
-        $student = User::factory()->create(['is_admin' => false]);
+        $student = Student::factory()->create(['is_admin' => false]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -373,7 +374,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -404,9 +405,9 @@ class ExampleTest extends TestCase
             ->assertSee(route('exams.results', $exam));
     }
 
-    public function test_admin_can_open_all_results_from_my_results_page(): void
+    public function test_admin_can_open_historical_admin_results_from_admin_results_page(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -424,7 +425,7 @@ class ExampleTest extends TestCase
 
         \App\Models\ExamAttempt::create([
             'exam_id' => $exam->id,
-            'user_id' => $admin->id,
+            'admin_id' => $admin->id,
             'status' => 'graded',
             'score' => 8,
             'total_marks' => 10,
@@ -433,17 +434,17 @@ class ExampleTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/my-results')
+            ->get('/admin/results')
             ->assertOk()
-            ->assertSee('All result')
-            ->assertSee(route('exams.results', $exam));
+            ->assertSee('Bangla Practice Exam')
+            ->assertSee($admin->name);
     }
 
     public function test_student_can_view_all_results_for_same_exam(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create(['name' => 'Current Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
-        $otherStudent = User::factory()->create(['name' => 'Other Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $student = Student::factory()->create(['name' => 'Current Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $otherStudent = Student::factory()->create(['name' => 'Other Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
             'academic_class_id' => $class->id,
@@ -451,7 +452,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -501,7 +502,7 @@ class ExampleTest extends TestCase
     {
         $examClass = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $currentClass = \App\Models\AcademicClass::create(['name' => 'Class 6']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'name' => 'Current Student',
             'academic_class_id' => $currentClass->id,
             'is_admin' => false,
@@ -513,7 +514,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $examClass->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -558,7 +559,7 @@ class ExampleTest extends TestCase
 
     public function test_sitemap_includes_only_public_indexable_routes(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $classWithExams = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $emptyClass = \App\Models\AcademicClass::create(['name' => 'Empty Class']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
@@ -642,7 +643,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_create_exam_with_random_question_count(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -688,10 +689,10 @@ class ExampleTest extends TestCase
 
     public function test_logged_in_student_sees_only_own_class_exams(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $classFive = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $classSix = \App\Models\AcademicClass::create(['name' => 'Class 6']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $classFive->id,
             'is_admin' => false,
         ]);
@@ -732,9 +733,9 @@ class ExampleTest extends TestCase
 
     public function test_home_page_replaces_start_exam_for_already_participated_exam(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -776,10 +777,10 @@ class ExampleTest extends TestCase
 
     public function test_student_cannot_open_another_class_exam_directly(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $classFive = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $classSix = \App\Models\AcademicClass::create(['name' => 'Class 6']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $classFive->id,
             'is_admin' => false,
         ]);
@@ -804,7 +805,7 @@ class ExampleTest extends TestCase
 
     public function test_guest_cannot_preview_exam_questions_or_submit_answers(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -854,13 +855,13 @@ class ExampleTest extends TestCase
 
     public function test_login_can_redirect_back_to_exam_preview(): void
     {
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'email' => 'preview-student@example.com',
             'phone' => '01733333333',
             'password' => bcrypt('password'),
             'is_admin' => false,
         ]);
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -890,7 +891,7 @@ class ExampleTest extends TestCase
 
     public function test_login_can_redirect_to_customize_exam_page(): void
     {
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'email' => 'custom-login@example.com',
             'phone' => '01744444444',
             'password' => bcrypt('password'),
@@ -918,7 +919,7 @@ class ExampleTest extends TestCase
 
     public function test_home_page_groups_exams_by_schedule_status(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -982,7 +983,7 @@ class ExampleTest extends TestCase
     public function test_student_cannot_submit_exam_outside_running_schedule(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -993,7 +994,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -1041,7 +1042,7 @@ class ExampleTest extends TestCase
     public function test_student_must_submit_exam_within_duration(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -1052,7 +1053,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -1105,7 +1106,7 @@ class ExampleTest extends TestCase
     public function test_student_cannot_submit_after_exam_duration_expires(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -1116,7 +1117,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -1159,7 +1160,7 @@ class ExampleTest extends TestCase
     public function test_auto_submit_is_accepted_shortly_after_exam_duration_expires(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -1170,7 +1171,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -1215,7 +1216,7 @@ class ExampleTest extends TestCase
     public function test_student_can_participate_in_an_exam_only_once(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -1226,7 +1227,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -1283,7 +1284,7 @@ class ExampleTest extends TestCase
     public function test_database_prevents_duplicate_exam_attempts_for_same_student(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -1294,7 +1295,7 @@ class ExampleTest extends TestCase
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -1356,7 +1357,7 @@ class ExampleTest extends TestCase
             ->assertSessionHas('status', 'Account created.');
 
         $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('students', [
             'name' => 'New Student',
             'phone' => '01711111111',
             'school_id' => $school->id,
@@ -1388,7 +1389,7 @@ class ExampleTest extends TestCase
 
         $school = \App\Models\School::where('title', 'New Pending School')->firstOrFail();
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('students', [
             'name' => 'Pending School Student',
             'phone' => '01811111111',
             'school_id' => $school->id,
@@ -1423,7 +1424,7 @@ class ExampleTest extends TestCase
             ->assertRedirect(route('home'))
             ->assertSessionHas('status', 'Account created.');
 
-        $user = User::where('phone', '01911111111')->firstOrFail();
+        $user = Student::where('phone', '01911111111')->firstOrFail();
 
         $this->assertNotNull($user->profile_photo_path);
         $this->assertStringStartsWith('uploads/profile-photos/', $user->profile_photo_path);
@@ -1438,7 +1439,7 @@ class ExampleTest extends TestCase
 
     public function test_student_cannot_access_admin_panel(): void
     {
-        $student = User::factory()->create(['is_admin' => false]);
+        $student = Student::factory()->create(['is_admin' => false]);
 
         $this->actingAs($student)
             ->get('/admin')
@@ -1447,7 +1448,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_access_admin_panel(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
             ->get('/admin')
@@ -1460,19 +1461,19 @@ class ExampleTest extends TestCase
 
     public function test_super_admin_can_see_user_menu_and_manage_admin_users(): void
     {
-        $superAdmin = User::factory()->create([
+        $superAdmin = Admin::factory()->create([
             'email' => 'super-admin@example.com',
             'is_admin' => true,
             'is_super_admin' => true,
             'name' => 'Super Admin',
         ]);
-        $admin = User::factory()->create([
+        $admin = Admin::factory()->create([
             'email' => 'regular-admin@example.com',
             'is_admin' => true,
             'is_super_admin' => false,
             'name' => 'Regular Admin',
         ]);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'email' => 'student-user@example.com',
             'is_admin' => false,
             'name' => 'Student User',
@@ -1511,7 +1512,7 @@ class ExampleTest extends TestCase
             ->assertRedirect(route('admin.users.index'))
             ->assertSessionHas('status', 'Admin user added.');
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('admins', [
             'name' => 'New Admin',
             'email' => 'new-admin@example.com',
             'phone' => '01722222222',
@@ -1522,7 +1523,7 @@ class ExampleTest extends TestCase
 
     public function test_normal_admin_cannot_see_or_access_user_management(): void
     {
-        $admin = User::factory()->create([
+        $admin = Admin::factory()->create([
             'is_admin' => true,
             'is_super_admin' => false,
         ]);
@@ -1554,12 +1555,12 @@ class ExampleTest extends TestCase
     public function test_admin_can_view_student_list(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $admin = User::factory()->create([
+        $admin = Admin::factory()->create([
             'email' => 'admin@example.com',
             'is_admin' => true,
             'name' => 'Admin User',
         ]);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'name' => 'Student User',
             'email' => 'student@example.com',
             'phone' => '01712345678',
@@ -1623,7 +1624,7 @@ class ExampleTest extends TestCase
 
     public function test_student_cannot_access_student_list(): void
     {
-        $student = User::factory()->create(['is_admin' => false]);
+        $student = Student::factory()->create(['is_admin' => false]);
 
         $this->actingAs($student)
             ->get(route('admin.students.index'))
@@ -1632,7 +1633,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_add_and_view_schools(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
             ->get(route('admin.schools.index'))
@@ -1695,7 +1696,7 @@ class ExampleTest extends TestCase
 
     public function test_student_cannot_access_schools_admin_pages(): void
     {
-        $student = User::factory()->create(['is_admin' => false]);
+        $student = Student::factory()->create(['is_admin' => false]);
 
         $this->actingAs($student)
             ->get(route('admin.schools.index'))
@@ -1730,7 +1731,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_access_question_add_page(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
             ->get('/admin/questions/create')
@@ -1743,7 +1744,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_manage_academic_structure(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)
             ->post('/admin/classes', ['name' => 'Class 10'])
@@ -1777,7 +1778,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_add_question_for_matching_class_subject_and_chapter(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -1808,7 +1809,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_bulk_add_questions_from_text_format(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Physics']);
         $chapter = \App\Models\Chapter::create([
@@ -1869,7 +1870,7 @@ TEXT;
 
     public function test_admin_bulk_add_skips_existing_and_repeated_questions(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Physics']);
         $chapter = \App\Models\Chapter::create([
@@ -1925,7 +1926,7 @@ TEXT;
 
     public function test_admin_cannot_add_question_with_mismatched_chapter(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $classFive = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $classSix = \App\Models\AcademicClass::create(['name' => 'Class 6']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
@@ -1955,7 +1956,7 @@ TEXT;
 
     public function test_admin_can_fetch_only_related_chapters_for_selected_class_and_subject(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $classFive = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $classSix = \App\Models\AcademicClass::create(['name' => 'Class 6']);
         $bangla = \App\Models\Subject::create(['name' => 'Bangla']);
@@ -1996,7 +1997,7 @@ TEXT;
 
     public function test_student_can_view_own_exam_attempt_result(): void
     {
-        $student = User::factory()->create(['is_admin' => false]);
+        $student = Student::factory()->create(['is_admin' => false]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -2005,7 +2006,7 @@ TEXT;
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -2028,8 +2029,8 @@ TEXT;
 
     public function test_student_cannot_view_another_students_exam_attempt_result(): void
     {
-        $owner = User::factory()->create(['is_admin' => false]);
-        $otherStudent = User::factory()->create(['is_admin' => false]);
+        $owner = Student::factory()->create(['is_admin' => false]);
+        $otherStudent = Student::factory()->create(['is_admin' => false]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -2038,7 +2039,7 @@ TEXT;
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $owner->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -2061,10 +2062,10 @@ TEXT;
 
     public function test_admin_can_view_results_for_a_single_exam_from_exam_list(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
-        $firstStudent = User::factory()->create(['name' => 'First Student', 'is_admin' => false]);
-        $thirdStudent = User::factory()->create(['name' => 'Third Student', 'is_admin' => false]);
-        $secondStudent = User::factory()->create(['name' => 'Second Student', 'is_admin' => false]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
+        $firstStudent = Student::factory()->create(['name' => 'First Student', 'is_admin' => false]);
+        $thirdStudent = Student::factory()->create(['name' => 'Third Student', 'is_admin' => false]);
+        $secondStudent = Student::factory()->create(['name' => 'Second Student', 'is_admin' => false]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
@@ -2149,15 +2150,15 @@ TEXT;
 
     public function test_admin_can_view_and_mark_gift_recipients(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $firstStudent = User::factory()->create([
+        $firstStudent = Student::factory()->create([
             'name' => 'First Gift Student',
             'phone' => '01711111111',
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
-        $secondStudent = User::factory()->create([
+        $secondStudent = Student::factory()->create([
             'name' => 'Second Gift Student',
             'phone' => '01811111111',
             'academic_class_id' => $class->id,
@@ -2234,21 +2235,21 @@ TEXT;
 
     public function test_home_page_shows_only_given_gift_recipients(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $school = \App\Models\School::create([
             'title' => 'Public Winner School',
             'address' => 'Dhaka',
             'status' => 'active',
         ]);
-        $winner = User::factory()->create([
+        $winner = Student::factory()->create([
             'name' => 'Public Gift Winner',
             'academic_class_id' => $class->id,
             'school_id' => $school->id,
             'profile_photo_path' => 'uploads/profile-photos/winner.jpg',
             'is_admin' => false,
         ]);
-        $pendingWinner = User::factory()->create([
+        $pendingWinner = Student::factory()->create([
             'name' => 'Pending Gift Winner',
             'academic_class_id' => $class->id,
             'is_admin' => false,
@@ -2315,10 +2316,10 @@ TEXT;
     public function test_exam_results_use_dense_positions_after_tied_scores(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create(['name' => 'Current Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
-        $secondStudent = User::factory()->create(['name' => 'Second Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
-        $thirdStudent = User::factory()->create(['name' => 'Third Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
-        $fourthStudent = User::factory()->create(['name' => 'Fourth Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $student = Student::factory()->create(['name' => 'Current Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $secondStudent = Student::factory()->create(['name' => 'Second Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $thirdStudent = Student::factory()->create(['name' => 'Third Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
+        $fourthStudent = Student::factory()->create(['name' => 'Fourth Student', 'academic_class_id' => $class->id, 'is_admin' => false]);
         $subject = \App\Models\Subject::create(['name' => 'Bangla']);
         $chapter = \App\Models\Chapter::create([
             'academic_class_id' => $class->id,
@@ -2326,7 +2327,7 @@ TEXT;
             'name' => 'Chapter 1',
         ]);
         $exam = \App\Models\Exam::create([
-            'created_by' => $student->id,
+            'created_by' => Admin::factory()->create()->id,
             'academic_class_id' => $class->id,
             'subject_id' => $subject->id,
             'chapter_id' => $chapter->id,
@@ -2389,7 +2390,7 @@ TEXT;
     public function test_student_can_create_and_submit_custom_exam(): void
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -2495,7 +2496,7 @@ TEXT;
     {
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
         $otherClass = \App\Models\AcademicClass::create(['name' => 'Class 6']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'academic_class_id' => $class->id,
             'is_admin' => false,
         ]);
@@ -2558,9 +2559,9 @@ TEXT;
 
     public function test_admin_can_view_student_custom_exam_results(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = Admin::factory()->create(['is_admin' => true]);
         $class = \App\Models\AcademicClass::create(['name' => 'Class 5']);
-        $student = User::factory()->create([
+        $student = Student::factory()->create([
             'name' => 'Custom Result Student',
             'academic_class_id' => $class->id,
             'is_admin' => false,
@@ -2598,7 +2599,7 @@ TEXT;
             ->assertSee('Custom Result Student')
             ->assertSee('Science - Light Custom Exam')
             ->assertSee('4 / 5')
-            ->assertSee(route('custom-exam-attempts.result', $attempt));
+            ->assertSee(route('admin.custom-results.show', $attempt));
     }
 
 }

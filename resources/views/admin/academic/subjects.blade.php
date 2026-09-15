@@ -103,7 +103,8 @@
                                     <td>{{ $subject->name }}</td>
                                     <td>{{ $subject->academicClasses->pluck('name')->implode(', ') ?: 'Unassigned' }}</td>
                                     <td>
-                                        <div class="table-actions">
+                                        @if ($subject->canBeManagedBy(auth()->user()))
+<div class="table-actions">
                                             <button class="secondary-action small js-edit-academic" type="button" data-modal-target="edit-subject-{{ $subject->id }}">Edit</button>
                                             <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}" onsubmit="return confirm('Delete this subject?')">
                                                 @csrf
@@ -111,6 +112,9 @@
                                                 <button class="danger small" type="submit">Delete</button>
                                             </form>
                                         </div>
+@else
+<span class="muted">Read only</span>
+@endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -161,6 +165,7 @@
             </div>
 
             @foreach ($subjects as $subject)
+                @continue(! $subject->canBeManagedBy(auth()->user()))
                 <div class="modal-backdrop" id="edit-subject-{{ $subject->id }}" aria-hidden="true">
                     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-subject-{{ $subject->id }}-title">
                         <div class="modal-head">

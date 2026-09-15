@@ -2,6 +2,11 @@
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+    <style>
+        .table-filters { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+        .table-filter-field { min-width: 190px; }
+        .table-filter-field select { width: 100%; min-height: 38px; padding: 6px 10px; }
+    </style>
 @endpush
 
 @section('content')
@@ -27,6 +32,27 @@
                     </div>
                 </div>
 
+                <div class="table-filters">
+                    <label class="table-filter-field">
+                        Class
+                        <select id="filter-chapters-class">
+                            <option value="">All classes</option>
+                            @foreach ($classes as $class)
+                                <option value="{{ $class->id }}" data-class-name="{{ $class->name }}">{{ $class->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="table-filter-field">
+                        Subject
+                        <select id="filter-chapters-subject">
+                            <option value="">All subjects</option>
+                            @foreach ($subjects as $subject)
+                                <option value="{{ $subject->name }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
+
                 <div class="table-wrap">
                     <table id="chapters-table" class="display admin-data-table">
                         <thead>
@@ -46,7 +72,8 @@
                                     <td>{{ $chapter->chapter_no ?: '-' }}</td>
                                     <td>{{ $chapter->name }}</td>
                                     <td>
-                                        <div class="table-actions">
+                                        @if ($chapter->canBeManagedBy(auth()->user()))
+<div class="table-actions">
                                             <button class="secondary-action small js-edit-academic" type="button" data-modal-target="edit-chapter-{{ $chapter->id }}">Edit</button>
                                             <form method="POST" action="{{ route('admin.chapters.destroy', $chapter) }}" onsubmit="return confirm('Delete this oddhay / chapter?')">
                                                 @csrf
@@ -54,6 +81,9 @@
                                                 <button class="danger small" type="submit">Delete</button>
                                             </form>
                                         </div>
+@else
+<span class="muted">Read only</span>
+@endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -109,6 +139,7 @@
             </div>
 
             @foreach ($chapters as $chapter)
+                @continue(! $chapter->canBeManagedBy(auth()->user()))
                 <div class="modal-backdrop" id="edit-chapter-{{ $chapter->id }}" aria-hidden="true">
                     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-chapter-{{ $chapter->id }}-title">
                         <div class="modal-head">
@@ -195,6 +226,57 @@
             };
 
             classSelect.addEventListener('change', filterSubjects);
+            filterSubjects();
+        });
+    </script>
+
+    <script>
+        $(function () {
+            if (!$.fn.DataTable || !$('#chapters-table').length) {
+                return;
+            }
+
+            const $table = $('#chapters-table').DataTable();
+            const $classFilter = $('#filter-chapters-class');
+            const $subjectFilter = $('#filter-chapters-subject');
+
+            const filterSubjects = () => {
+                const selectedClass = String($classFilter.val());
+                let selectedVisible = false;
+
+                $subjectFilter.find('option').each(function () {
+                    const $option = $(this);
+                    if (!$option.val()) {
+                        $option.prop('hidden', false);
+                        return;
+                    }
+
+                    const optionClassIds = ($option.attr('data-class-ids') || '').split(',').filter(Boolean);
+                    const visible = !selectedClass || optionClassIds.includes(selectedClass);
+                    $option.prop('hidden', !visible);
+
+                    if ($option.is(':selected') && visible) {
+                        selectedVisible = true;
+                    }
+                });
+
+                if (!selectedVisible) {
+                    $subjectFilter.val('');
+                }
+            };
+
+            const applyFilters = () => {
+                const className = $classFilter.find(':selected').attr('data-class-name') || '';
+                $table.column(0).search(className).draw();
+                $table.column(1).search($subjectFilter.val()).draw();
+            };
+
+            $classFilter.on('change', () => {
+                filterSubjects();
+                applyFilters();
+            });
+            $subjectFilter.on('change', applyFilters);
+
             filterSubjects();
         });
     </script>

@@ -6,92 +6,7 @@
 
 @section('content')
     <div class="admin-layout">
-        <aside class="admin-sidebar">
-            <div class="admin-brand">
-                <img class="admin-logo" src="{{ asset('logo.svg') }}" alt="" aria-hidden="true">
-                <div>
-                    <h2>Bd ModelTest Admin</h2>
-                    <p>{{ auth()->user()->name }}</p>
-                </div>
-            </div>
-
-            <nav class="admin-menu" aria-label="Admin navigation">
-                <a class="admin-nav-link" href="{{ route('admin.index') }}#dashboard">Dashboard</a>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Academic Setup
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.academic.classes') }}">Class</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.subjects') }}">Subject</a>
-                        <a class="admin-nav-link" href="{{ route('admin.academic.chapters') }}">Oddhay / Chapter</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Question
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.index') }}#question-list">Question List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.questions.create') }}">Question Add</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Exam
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.exams.index') }}#exam-list">Exam List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.exams.index') }}#add-exam">Add Exam</a>
-                    </div>
-                </div>
-
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Schools
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}">School List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.schools.index') }}#add-school">Add School</a>
-                    </div>
-                </div>
-
-                @if (auth()->user()->is_super_admin)
-                    <div class="admin-menu-group">
-                        <button class="admin-menu-toggle" type="button">
-                            User
-                            <span></span>
-                        </button>
-                        <div class="admin-submenu">
-                            <a class="admin-nav-link" href="{{ route('admin.users.index') }}">User List</a>
-                            <a class="admin-nav-link" href="{{ route('admin.users.create') }}">Add User</a>
-                        </div>
-                    </div>
-                @endif
-                <div class="admin-menu-group">
-                    <button class="admin-menu-toggle" type="button">
-                        Blog
-                        <span></span>
-                    </button>
-                    <div class="admin-submenu">
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.index') }}">Blog List</a>
-                        <a class="admin-nav-link" href="{{ route('admin.blogs.create') }}">Add Blog</a>
-                    </div>
-                </div>
-
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.students.index') }}">Student List</a>
-                <a class="admin-nav-link admin-menu-direct is-active" href="{{ route('admin.results.index') }}">Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.custom-results.index') }}">Custom Result</a>
-                <a class="admin-nav-link admin-menu-direct" href="{{ route('admin.gift-recipients.index') }}">Gift List</a>
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar')
 
         <div class="admin-content">
             <section class="panel">
@@ -152,7 +67,7 @@
                                         @if ($exam)
                                             <td>{{ $attemptPositions[$attempt->id] }}</td>
                                         @endif
-                                        <td>{{ $attempt->user->name }}</td>
+                                        <td>{{ $attempt->user?->name ?? $attempt->admin?->name ?? 'Deleted account' }}</td>
                                         <td>{{ $attempt->exam->title }}</td>
                                         <td>{{ $attempt->exam->academicClass->name }}</td>
                                         <td>{{ $attempt->exam->subject->name }}</td>
@@ -163,7 +78,7 @@
                                         @endif
                                         <td>{{ optional($attempt->submitted_at)->format('M d, Y h:i A') }}</td>
                                         <td>
-                                            <a class="button secondary small" href="{{ route('exam-attempts.result', $attempt) }}">View result</a>
+                                            <a class="button secondary small" href="{{ route('admin.results.show', $attempt) }}">View result</a>
                                         </td>
                                     </tr>
                                 @endforeach
