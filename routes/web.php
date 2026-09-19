@@ -145,7 +145,12 @@ $localizedRoutes = function () {
 
         $examsByClass = $exams
             ->whereNotNull('academic_class_id')
-            ->groupBy('academic_class_id');
+            ->groupBy('academic_class_id')
+            ->sortBy([
+                fn ($left, $right) => ($left->first()->academicClass?->priority ?? 0) <=> ($right->first()->academicClass?->priority ?? 0),
+                fn ($left, $right) => strcmp($left->first()->academicClass?->name ?? '', $right->first()->academicClass?->name ?? ''),
+                fn ($left, $right) => $left->first()->academic_class_id <=> $right->first()->academic_class_id,
+            ]);
 
         $subjectCount = $exams
             ->whereNotNull('subject_id')

@@ -111,3 +111,57 @@
         @endif
     </nav>
 </aside>
+<script>
+    (() => {
+        const sidebar = document.currentScript.previousElementSibling;
+        const links = Array.from(sidebar.querySelectorAll('.admin-nav-link'));
+        const groups = Array.from(sidebar.querySelectorAll('.admin-menu-group'));
+        const initialActive = sidebar.querySelector('.admin-nav-link.is-active');
+
+        function setGroupOpen(group, open) {
+            group.classList.toggle('is-open', open);
+            group.querySelector('.admin-menu-toggle').setAttribute('aria-expanded', String(open));
+            group.querySelector('.admin-submenu').style.removeProperty('display');
+        }
+
+        function updateActiveMenu() {
+            const current = new URL(window.location.href);
+            const matches = links.filter(link => {
+                const target = new URL(link.href);
+                return target.origin === current.origin && target.pathname === current.pathname;
+            });
+            const active = matches.find(link => new URL(link.href).hash === current.hash)
+                || matches[0] || initialActive;
+
+            links.forEach(link => {
+                const selected = link === active;
+                link.classList.toggle('is-active', selected);
+                if (selected) {
+                    link.setAttribute('aria-current', current.hash ? 'location' : 'page');
+                } else {
+                    link.removeAttribute('aria-current');
+                }
+            });
+
+            groups.forEach(group => {
+                const selected = Boolean(active && group.contains(active));
+                group.classList.toggle('is-active', selected);
+                setGroupOpen(group, selected);
+            });
+        }
+
+        // Handle toggles here before legacy page-specific handlers can toggle them again.
+        sidebar.addEventListener('click', event => {
+            const button = event.target.closest('.admin-menu-toggle');
+            if (!button) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            const group = button.closest('.admin-menu-group');
+            setGroupOpen(group, !group.classList.contains('is-open'));
+        }, true);
+
+        window.addEventListener('hashchange', updateActiveMenu);
+        window.addEventListener('pageshow', updateActiveMenu);
+        updateActiveMenu();
+    })();
+</script>

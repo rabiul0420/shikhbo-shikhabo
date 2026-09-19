@@ -21,9 +21,9 @@ class ExamController extends Controller
 {
     public function index(Request $request): View
     {
-        $visibleExams = Exam::query()->visibleToAdmin($request->user());
+        $visibleExams = Exam::query();
         $examCount = (clone $visibleExams)->count();
-        $resultExamIds = (clone $visibleExams)->pluck('slug');
+        $resultExamIds = (clone $visibleExams)->visibleToAdmin($request->user())->pluck('slug');
         $classes = AcademicClass::query()->orderBy('name')->get();
         $subjects = Subject::query()->with('academicClasses')->orderBy('name')->get();
 
@@ -50,6 +50,7 @@ class ExamController extends Controller
         $classId = (int) $request->input('class_id', 0) ?: null;
         $subjectId = (int) $request->input('subject_id', 0) ?: null;
         $creatorId = (int) $request->input('creator_id', 0) ?: null;
+        $status = $request->input('status');
         $start = max((int) $request->input('start', 0), 0);
         $length = (int) $request->input('length', 10);
         $length = $length === -1 ? 100 : min(max($length, 1), 100);
@@ -57,7 +58,6 @@ class ExamController extends Controller
         $orderDirection = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
 
         $baseQuery = Exam::query()
-            ->visibleToAdmin($request->user())
             ->with(['academicClass', 'subject', 'chapter', 'creator'])
             ->withCount('questions');
 
@@ -80,7 +80,14 @@ class ExamController extends Controller
             })
             ->when($classId, fn (Builder $query) => $query->where('academic_class_id', $classId))
             ->when($subjectId, fn (Builder $query) => $query->where('subject_id', $subjectId))
-            ->when($creatorId, fn (Builder $query) => $query->where('created_by', $creatorId));
+            ->when($creatorId, fn (Builder $query) => $query->where('created_by', $creatorId))
+            ->when($status === 'upcoming', fn (Builder $query) => $query->whereDate('starts_at', '>', today()))
+            ->when($status === 'expired', fn (Builder $query) => $query->whereDate('ends_at', '<', today()))
+            ->when($status === 'running', fn (Builder $query) => $query->where(function (Builder $query) {
+                $query->whereNull('starts_at')->orWhereDate('starts_at', '<=', today());
+            })->where(function (Builder $query) {
+                $query->whereNull('ends_at')->orWhereDate('ends_at', '>=', today());
+            }));
 
         $filtered = (clone $filteredQuery)->count();
 

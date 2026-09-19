@@ -17,7 +17,7 @@ class ClassExamController extends Controller
                 auth()->check() && ! auth()->user()->is_admin,
                 fn ($query) => $query->whereKey(auth()->user()->academic_class_id)
             )
-            ->orderBy('name');
+            ->ordered();
 
         $classes = $classesQuery
             ->get()
@@ -77,7 +77,7 @@ class ClassExamController extends Controller
 
         $status = $request->query('status');
         if (in_array($status, ['running', 'upcoming'], true)) {
-            $exams = $exams->filter(fn (Exam $exam) => $exam->scheduleStatus() === $status)->values();
+            $exams = $exams->filter(fn (Exam $exam) => $status === 'running' ? $exam->isCurrentlyRunning() : $exam->scheduleStatus() === $status)->values();
         }
 
         return view('classes.exams', [

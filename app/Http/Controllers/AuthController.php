@@ -67,7 +67,7 @@ class AuthController extends Controller
     public function showRegister(): View
     {
         $classes = AcademicClass::query()
-            ->orderBy('name')
+            ->ordered()
             ->get();
 
         $schools = School::query()
@@ -131,7 +131,7 @@ class AuthController extends Controller
     public function editProfile(): View
     {
         $classes = AcademicClass::query()
-            ->orderBy('name')
+            ->ordered()
             ->get();
 
         $schools = School::query()

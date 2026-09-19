@@ -41,6 +41,7 @@
                                 @foreach ($giftRecipients as $recipient)
                                     @php
                                         $isGiven = optional($recipient->award)->status === 'given';
+                                        $account = $recipient->attempt->user ?? $recipient->attempt->admin;
                                     @endphp
                                     <tr>
                                         <td>
@@ -53,9 +54,9 @@
                                             @endif
                                         </td>
                                         <td>{{ $recipient->position }}</td>
-                                        <td>{{ $recipient->attempt->user->name }}</td>
-                                        <td>{{ $recipient->attempt->user->phone ?? '-' }}</td>
-                                        <td>{{ $recipient->attempt->user->academicClass->name ?? $recipient->exam->academicClass->name }}</td>
+                                        <td>{{ $account?->name ?? 'Deleted account' }}</td>
+                                        <td>{{ $account?->phone ?? '-' }}</td>
+                                        <td>{{ $account?->academicClass?->name ?? $recipient->exam->academicClass?->name ?? '-' }}</td>
                                         <td>{{ $recipient->exam->title }}</td>
                                         <td><strong>{{ $recipient->gift_title }}</strong></td>
                                         <td>{{ $recipient->attempt->score }} / {{ $recipient->attempt->total_marks }}</td>

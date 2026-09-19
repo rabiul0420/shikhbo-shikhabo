@@ -963,21 +963,27 @@ class ExampleTest extends TestCase
             ->assertDontSee('>Expired Model Test<', false)
             ->assertSee('Running Schedule Exam')
             ->assertSee('Upcoming Schedule Exam')
-            ->assertSee('Expired Schedule Exam');
+            ->assertDontSee('Expired Schedule Exam');
 
         $html = $response->getContent();
         $availablePos = strpos($html, 'id="status-running"');
-        $expiredExamPos = strpos($html, 'Expired Schedule Exam');
+        $runningExamPos = strpos($html, 'Running Schedule Exam');
         $upcomingPos = strpos($html, 'id="status-upcoming"');
         $upcomingExamPos = strpos($html, 'Upcoming Schedule Exam');
 
         $this->assertNotFalse($availablePos);
-        $this->assertNotFalse($expiredExamPos);
+        $this->assertNotFalse($runningExamPos);
         $this->assertNotFalse($upcomingPos);
         $this->assertNotFalse($upcomingExamPos);
-        $this->assertTrue($availablePos < $expiredExamPos, 'Past-deadline exam should appear under Available');
-        $this->assertTrue($expiredExamPos < $upcomingPos, 'Available exams should appear before Upcoming section');
+        $this->assertTrue($availablePos < $runningExamPos);
+        $this->assertTrue($runningExamPos < $upcomingPos);
         $this->assertTrue($upcomingPos < $upcomingExamPos);
+
+        $this->get(route('classes.exams', ['classSlug' => $class->slug, 'status' => 'running']))
+            ->assertOk()
+            ->assertSee('Running Schedule Exam')
+            ->assertDontSee('Upcoming Schedule Exam')
+            ->assertDontSee('Expired Schedule Exam');
     }
 
     public function test_student_cannot_submit_exam_outside_running_schedule(): void
@@ -2231,6 +2237,33 @@ TEXT;
             ->assertOk()
             ->assertSee('Given')
             ->assertSee('Completed');
+
+        $historicalAdmin = Admin::factory()->create([
+            'name' => 'Historical Gift Admin',
+            'phone' => '01000000080',
+            'academic_class_id' => $class->id,
+        ]);
+        \App\Models\ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => null,
+            'admin_id' => $historicalAdmin->id,
+            'status' => 'graded',
+            'score' => 10,
+            'total_marks' => 10,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.gift-recipients.index'))
+            ->assertOk()
+            ->assertSee('Historical Gift Admin')
+            ->assertSee('01000000080')
+            ->assertSee('First Gift Student');
+
+        $historicalAdmin->delete();
+        $this->actingAs($admin)->get(route('admin.gift-recipients.index'))
+            ->assertOk()
+            ->assertSee('Deleted account');
     }
 
     public function test_home_page_shows_only_given_gift_recipients(): void

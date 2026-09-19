@@ -308,6 +308,7 @@
         .admin-menu-group { display: grid; gap: 4px; }
         .admin-menu-toggle { width: 100%; min-height: 34px; justify-content: space-between; padding: 7px 10px; background: transparent; color: #aaa39e; border: 0; border-radius: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
         .admin-menu-toggle:hover { background: rgba(255,255,255,.08); color: #fff; }
+        .admin-menu-group.is-active > .admin-menu-toggle { background: rgba(94,234,212,.06); color: #b4ded6; border-radius: 6px; }
         .admin-menu-toggle span { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .18s ease; }
         .admin-menu-group.is-open .admin-menu-toggle span { transform: rotate(225deg); }
         .admin-submenu { display: none; gap: 2px; padding-left: 0; margin-left: 0; }
@@ -315,7 +316,8 @@
         .admin-menu a { display: block; padding: 10px 12px; border-left: 3px solid transparent; border-radius: 0; color: #d8d4d1; font-weight: 500; transition: background .18s ease, color .18s ease, border-color .18s ease; }
         .admin-menu a.admin-menu-direct { min-height: 34px; padding: 7px 10px; border-left: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
         .admin-menu a:hover { background: rgba(255,255,255,.07); border-left-color: #f0f0f0; color: #fff; }
-        .admin-menu a.is-active { background: #007bff; border-left-color: #8ec5ff; color: #fff; }
+        .admin-menu a.is-active { background: #354a46; border-left-color: transparent; border-radius: 6px; color: #d5fff5; box-shadow: inset 3px 0 0 #78cbb6; }
+        .admin-menu a.is-active:hover { background: #3c554f; color: #effffb; }
         .admin-content { min-width: 0; display: grid; gap: 14px; padding: 0 14px 16px; background: #fff; }
         .admin-pagebar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 2px 12px; border-bottom: 1px solid #ececec; }
         .admin-pagebar h1 { color: #3c3c3c; font-size: 24px; font-weight: 400; }

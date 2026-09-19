@@ -107,6 +107,14 @@ class Exam extends Model
         return $this->scheduleStatus() === 'running';
     }
 
+    public function isCurrentlyRunning(): bool
+    {
+        $today = today();
+
+        return (! $this->starts_at || $this->starts_at->lte($today))
+            && (! $this->ends_at || $this->ends_at->gte($today));
+    }
+
     /**
      * @param  \Illuminate\Support\Collection<int, self>  $exams
      * @return \Illuminate\Support\Collection<int, self>

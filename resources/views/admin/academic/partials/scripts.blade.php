@@ -16,7 +16,7 @@
                     $('#{{ $tableId }}').DataTable({
                         pageLength: 10,
                         lengthMenu: [5, 10, 25, 50],
-                        order: [[0, 'asc']],
+                        order: @json($tableOrder ?? [[0, 'asc']]),
                         columnDefs: [
                             { orderable: false, searchable: false, targets: -1 },
                         ],

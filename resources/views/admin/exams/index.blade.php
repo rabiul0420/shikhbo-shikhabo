@@ -32,17 +32,23 @@
                             <option value="{{ $class->id }}">{{ $class->name }}</option>
                         @endforeach
                     </select>
+                    <select id="filter-subject" aria-label="Filter by subject">
+                        <option value="">All subjects</option>
+                        @foreach ($subjects as $subject)
+                            <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
+                        @endforeach
+                    </select>
                     <select id="filter-creator" aria-label="Filter by exam creator">
                         <option value="">All creators</option>
                         @foreach ($creators as $creator)
                             <option value="{{ $creator->id }}">{{ $creator->name }}</option>
                         @endforeach
                     </select>
-                    <select id="filter-subject" aria-label="Filter by subject">
-                        <option value="">All subjects</option>
-                        @foreach ($subjects as $subject)
-                            <option value="{{ $subject->id }}" data-class-ids="{{ $subject->academicClasses->pluck('id')->implode(',') }}">{{ $subject->name }}</option>
-                        @endforeach
+                    <select id="filter-status" aria-label="Filter by exam status">
+                        <option value="">All statuses</option>
+                        <option value="running">Running</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="expired">Expired</option>
                     </select>
                 </div>
 
@@ -277,6 +283,7 @@
                                 d.class_id = $('#filter-class').val();
                                 d.subject_id = $('#filter-subject').val();
                                 d.creator_id = $('#filter-creator').val();
+                                d.status = $('#filter-status').val();
                             },
                         },
                         pageLength: 10,
@@ -331,7 +338,7 @@
                         examsTable.ajax.reload(null, false);
                     });
 
-                    $('#filter-subject, #filter-creator').on('change', function () {
+                    $('#filter-subject, #filter-creator, #filter-status').on('change', function () {
                         examsTable.ajax.reload(null, false);
                     });
                 }

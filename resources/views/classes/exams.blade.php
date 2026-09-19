@@ -352,7 +352,7 @@
         ];
         $examGroups = collect(['running', 'upcoming'])
             ->mapWithKeys(fn ($status) => [
-                $status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status),
+                $status => $exams->filter(fn ($exam) => $status === 'running' ? $exam->isCurrentlyRunning() : $exam->scheduleStatus() === $status),
             ]);
     @endphp
 
