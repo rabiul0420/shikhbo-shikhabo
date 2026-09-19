@@ -11,7 +11,19 @@ class AcademicClass extends Model
 {
     use \App\Models\Concerns\HasAcademicOwner;
 
-    protected $fillable = ['name', 'created_by'];
+    protected $fillable = ['name', 'created_by', 'priority'];
+
+    protected $casts = ['priority' => 'integer'];
+
+    public function scopeOrdered(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->orderBy('priority')->orderBy('name')->orderBy('id');
+    }
+
+    public function subjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class)->withTimestamps();
+    }
 
     public function chapters(): HasMany
     {

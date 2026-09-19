@@ -990,7 +990,7 @@
 @section('content')
     @php
         $examGroups = collect(['running', 'upcoming'])
-            ->mapWithKeys(fn ($status) => [$status => $exams->filter(fn ($exam) => $exam->scheduleStatus() === $status)]);
+            ->mapWithKeys(fn ($status) => [$status => $exams->filter(fn ($exam) => $status === 'running' ? $exam->isCurrentlyRunning() : $exam->scheduleStatus() === $status)]);
         $statusLabels = [
             'running' => __('site.home.running'),
             'upcoming' => __('site.home.upcoming'),
@@ -1164,7 +1164,13 @@
                                     <p class="muted">{{ __('site.home.no_status_exams', ['status' => $statusLabels[$status]]) }}</p>
                                 </section>
                             @else
-                                @foreach ($statusExams->groupBy(fn ($exam) => $exam->academic_class_id ?? 0) as $classId => $classExams)
+                                @php
+                                    $classOrder = $examsByClass->keys()->flip();
+                                    $statusClasses = $statusExams
+                                        ->groupBy(fn ($exam) => $exam->academic_class_id ?? 0)
+                                        ->sortBy(fn ($classExams, $classId) => $classOrder->get($classId, PHP_INT_MAX));
+                                @endphp
+                                @foreach ($statusClasses as $classId => $classExams)
                                     @include('partials.exam-class-section', [
                                         'status' => $status,
                                         'classId' => $classId ?: null,

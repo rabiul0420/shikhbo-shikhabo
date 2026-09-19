@@ -15,7 +15,27 @@ class ExamCreatorTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_exam_manager_can_only_list_and_modify_owned_exams(): void
+    public function test_status_filter_separates_running_upcoming_and_expired_exams(): void
+    {
+        $admin = Admin::factory()->create(['is_admin' => true]);
+        $class = AcademicClass::create(['name' => 'Class 6']);
+        $subject = Subject::create(['name' => 'Math']);
+        $chapter = Chapter::create(['academic_class_id' => $class->id, 'subject_id' => $subject->id, 'name' => 'Numbers']);
+        $attributes = ['academic_class_id' => $class->id, 'subject_id' => $subject->id, 'chapter_id' => $chapter->id, 'created_by' => $admin->id];
+        foreach ([null, today()->subDays(5), today(), today()->addDay()] as $index => $startsAt) {
+            Exam::create($attributes + ['title' => 'Exam '.$index, 'starts_at' => $startsAt, 'ends_at' => $index === 1 ? today()->subDay() : ($index === 0 ? null : today()->addDays(5))]);
+        }
+        Exam::where('title', 'Exam 2')->update(['ends_at' => today()]);
+        $this->actingAs($admin);
+        foreach (['running' => ['Exam 0', 'Exam 2'], 'upcoming' => ['Exam 3'], 'expired' => ['Exam 1']] as $status => $expected) {
+            $response = $this->getJson(route('admin.exams.data', ['status' => $status, 'class_id' => $class->id, 'creator_id' => $admin->id]))
+                ->assertOk()->assertJsonPath('recordsTotal', 4)->assertJsonPath('recordsFiltered', count($expected));
+            $this->assertEquals($expected, collect($response->json('data'))->pluck('title')->sort()->values()->all());
+        }
+        $this->getJson(route('admin.exams.data'))->assertOk()->assertJsonPath('recordsFiltered', 4);
+    }
+
+    public function test_exam_manager_can_list_all_exams_but_only_modify_owned_exams(): void
     {
         $manager = Admin::factory()->create(['is_admin' => true, 'admin_role' => 'exam_manager']);
         $other = Admin::factory()->create(['is_admin' => true]);
@@ -34,14 +54,21 @@ class ExamCreatorTest extends TestCase
         ];
 
         $this->actingAs($manager)->get(route('admin.exams.index'))->assertOk()
-            ->assertViewHas('examCount', 1)
-            ->assertViewHas('creators', fn ($creators) => $creators->modelKeys() === [$manager->id])
+            ->assertViewHas('examCount', 3)
+            ->assertViewHas('creators', fn ($creators) => $creators->pluck('id')->sort()->values()->all() === [$manager->id, $other->id])
             ->assertDontSee(route('admin.exams.results', $foreign));
         $this->getJson(route('admin.exams.data'))->assertOk()
-            ->assertJsonPath('recordsTotal', 1)->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'My exam');
+            ->assertJsonPath('recordsTotal', 3)->assertJsonCount(3, 'data')
+            ->assertJsonPath('data.0.title', 'My exam')
+            ->assertJsonPath('data.1.title', 'Other exam')
+            ->assertJsonPath('data.2.title', 'Unassigned exam');
         foreach ([['creator_id' => $other->id], ['search' => ['value' => 'Other']]] as $filter) {
-            $this->getJson(route('admin.exams.data', $filter))->assertOk()
-                ->assertJsonPath('recordsTotal', 1)->assertJsonPath('recordsFiltered', 0)->assertJsonCount(0, 'data');
+            $response = $this->getJson(route('admin.exams.data', $filter))->assertOk()
+                ->assertJsonPath('recordsTotal', 3)->assertJsonPath('recordsFiltered', 1)->assertJsonCount(1, 'data')
+                ->assertJsonPath('data.0.title', 'Other exam');
+            $this->assertStringContainsString('View only', $response->json('data.0.actions'));
+            $this->assertStringNotContainsString('js-edit-exam', $response->json('data.0.actions'));
+            $this->assertStringNotContainsString('Delete', $response->json('data.0.actions'));
         }
         foreach ([$foreign, $unknown] as $exam) {
             $this->getJson(route('admin.exams.edit-data', $exam))->assertForbidden();

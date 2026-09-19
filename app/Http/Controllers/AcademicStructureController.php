@@ -8,6 +8,7 @@ use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -15,9 +16,14 @@ class AcademicStructureController extends Controller
 {
     public function classes(): View
     {
-        $classes = AcademicClass::query()->orderBy('name')->get();
+        $classes = AcademicClass::query()
+            ->with(['subjects' => fn ($query) => $query->orderBy('name')])
+            ->ordered()
+            ->get();
 
-        return view('admin.academic.classes', compact('classes'));
+        $subjects = Subject::query()->orderBy('name')->get();
+
+        return view('admin.academic.classes', compact('classes', 'subjects'));
     }
 
     public function subjects(): View
@@ -77,6 +83,7 @@ class AcademicStructureController extends Controller
     {
         AcademicClass::create($request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:academic_classes,name'],
+            'priority' => ['sometimes', 'required', 'integer', 'min:0', 'max:4294967295'],
         ]) + ['created_by' => $request->user()->id]);
 
         return back()->with('status', 'Class added.');
@@ -85,9 +92,21 @@ class AcademicStructureController extends Controller
     public function updateClass(Request $request, AcademicClass $academicClass): RedirectResponse
     {
         abort_unless($academicClass->canBeManagedBy($request->user()), 403);
-        $academicClass->update($request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:academic_classes,name,' . $academicClass->id],
-        ]));
+            'priority' => ['sometimes', 'required', 'integer', 'min:0', 'max:4294967295'],
+            'update_subjects' => ['sometimes', 'boolean'],
+            'subject_ids' => ['sometimes', 'array'],
+            'subject_ids.*' => ['required', 'integer', 'distinct', 'exists:subjects,id'],
+        ]);
+
+        DB::transaction(function () use ($academicClass, $request, $data) {
+            $academicClass->update(array_intersect_key($data, array_flip(['name', 'priority'])));
+
+            if ($request->boolean('update_subjects') || array_key_exists('subject_ids', $data)) {
+                $academicClass->subjects()->sync($data['subject_ids'] ?? []);
+            }
+        });
 
         return back()->with('status', 'Class updated.');
     }

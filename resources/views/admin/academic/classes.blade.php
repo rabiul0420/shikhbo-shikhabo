@@ -2,6 +2,12 @@
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
+    <style>
+        .subject-picker { padding: 12px; border: 1px solid #d8dee6; }
+        .subject-picker-grid { display: grid; gap: 8px; max-height: 260px; overflow-y: auto; }
+        .subject-picker-grid label { display: flex; align-items: center; gap: 8px; }
+        .subject-picker-grid input { width: 16px; height: 16px; margin: 0; }
+    </style>
 @endpush
 
 @section('content')
@@ -32,6 +38,8 @@
                         <thead>
                             <tr>
                                 <th>Name</th>
+                                <th>Subjects</th>
+                                <th>Priority</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -39,6 +47,14 @@
                             @foreach ($classes as $class)
                                 <tr>
                                     <td>{{ $class->name }}</td>
+                                    <td>
+                                        @forelse ($class->subjects as $subject)
+                                            <div>{{ $subject->name }}</div>
+                                        @empty
+                                            <span class="muted">No subjects assigned</span>
+                                        @endforelse
+                                    </td>
+                                    <td>{{ $class->priority }}</td>
                                     <td>
                                         @if ($class->canBeManagedBy(auth()->user()))
 <div class="table-actions">
@@ -76,6 +92,10 @@
                             Class name
                             <input name="name" placeholder="Class 9">
                         </label>
+                        <label>
+                            Priority (lower numbers appear first)
+                            <input type="number" name="priority" min="0" max="4294967295" step="1" value="0" required>
+                        </label>
                         <div class="modal-actions">
                             <button class="button secondary js-close-modal" type="button" data-modal-close="add-class">Cancel</button>
                             <button type="submit">Add class</button>
@@ -103,6 +123,24 @@
                                 Class name
                                 <input name="name" value="{{ $class->name }}">
                             </label>
+                            <label>
+                                Priority (lower numbers appear first)
+                                <input type="number" name="priority" min="0" max="4294967295" step="1" value="{{ $class->priority }}" required>
+                            </label>
+                            <input type="hidden" name="update_subjects" value="1">
+                            <fieldset class="subject-picker">
+                                <legend>Subjects</legend>
+                                <div class="subject-picker-grid">
+                                    @forelse ($subjects as $subject)
+                                        <label>
+                                            <input type="checkbox" name="subject_ids[]" value="{{ $subject->id }}" @checked($class->subjects->contains('id', $subject->id))>
+                                            <span>{{ $subject->name }}</span>
+                                        </label>
+                                    @empty
+                                        <span class="muted">No subjects available. Add subjects from the Subject page first.</span>
+                                    @endforelse
+                                </div>
+                            </fieldset>
                             <div class="modal-actions">
                                 <button class="button secondary js-close-modal" type="button" data-modal-close="edit-class-{{ $class->id }}">Cancel</button>
                                 <button type="submit">Update class</button>
@@ -115,4 +153,4 @@
     </div>
 @endsection
 
-@include('admin.academic.partials.scripts', ['tableId' => 'classes-table'])
+@include('admin.academic.partials.scripts', ['tableId' => 'classes-table', 'tableOrder' => [[2, 'asc'], [0, 'asc']]])

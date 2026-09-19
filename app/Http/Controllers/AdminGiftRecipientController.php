@@ -48,6 +48,7 @@ class AdminGiftRecipientController extends Controller
                 'subject',
                 'chapter',
                 'attempts.user.academicClass',
+                'attempts.admin.academicClass',
                 'attempts.giftAward',
             ])
             ->where(function ($query) {
